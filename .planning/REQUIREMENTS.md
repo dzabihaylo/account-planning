@@ -94,39 +94,39 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERS-01 | — | Pending |
-| PERS-02 | — | Pending |
-| PERS-03 | — | Pending |
-| PERS-04 | — | Pending |
-| CONT-01 | — | Pending |
-| CONT-02 | — | Pending |
-| CONT-03 | — | Pending |
-| CONT-04 | — | Pending |
-| CONT-05 | — | Pending |
-| CONT-06 | — | Pending |
-| PURS-01 | — | Pending |
-| PURS-02 | — | Pending |
-| PURS-03 | — | Pending |
-| STRT-01 | — | Pending |
-| STRT-02 | — | Pending |
-| STRT-03 | — | Pending |
-| STRT-04 | — | Pending |
-| ACCT-01 | — | Pending |
-| ACCT-02 | — | Pending |
-| ACCT-03 | — | Pending |
-| ACCT-04 | — | Pending |
-| REFR-01 | — | Pending |
-| REFR-02 | — | Pending |
-| REFR-03 | — | Pending |
-| REFR-04 | — | Pending |
-| BREF-01 | — | Pending |
-| BREF-02 | — | Pending |
+| PERS-01 | Phase 1 | Pending |
+| PERS-02 | Phase 1 | Pending |
+| PERS-03 | Phase 1 | Pending |
+| PERS-04 | Phase 1 | Pending |
+| ACCT-01 | Phase 1 | Pending |
+| ACCT-02 | Phase 1 | Pending |
+| ACCT-03 | Phase 1 | Pending |
+| ACCT-04 | Phase 1 | Pending |
+| CONT-01 | Phase 2 | Pending |
+| CONT-02 | Phase 2 | Pending |
+| CONT-03 | Phase 2 | Pending |
+| CONT-04 | Phase 2 | Pending |
+| CONT-05 | Phase 2 | Pending |
+| CONT-06 | Phase 2 | Pending |
+| PURS-01 | Phase 3 | Pending |
+| PURS-02 | Phase 3 | Pending |
+| PURS-03 | Phase 3 | Pending |
+| STRT-01 | Phase 4 | Pending |
+| STRT-02 | Phase 4 | Pending |
+| STRT-03 | Phase 4 | Pending |
+| STRT-04 | Phase 4 | Pending |
+| REFR-01 | Phase 5 | Pending |
+| REFR-02 | Phase 5 | Pending |
+| REFR-03 | Phase 5 | Pending |
+| REFR-04 | Phase 5 | Pending |
+| BREF-01 | Phase 6 | Pending |
+| BREF-02 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after initial definition*
+*Last updated: 2026-04-10 after roadmap creation — traceability complete*

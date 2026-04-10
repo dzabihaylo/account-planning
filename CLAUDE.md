@@ -213,3 +213,274 @@ When Dave provides a new company name, the process is:
 Grid Dynamics (NASDAQ: GDYN) is a publicly traded enterprise AI and digital transformation consultancy. Key differentiators vs large Indian SIs (HCL, Cognizant, Infosys): AI-native delivery, senior engineering talent, consultancy model rather than body-shop, Google Cloud partnership.
 
 Dave Zabihaylo joined Grid Dynamics March 1, 2026 as Senior Director GTM Automotive after departing Provectus. He owns the Ford account and is building the automotive go-to-market from the Detroit area. The accounts in this hub represent his active prospect list.
+
+<!-- GSD:project-start source:PROJECT.md -->
+## Project
+
+**Grid Dynamics Prospect Intelligence Hub**
+
+A pursuit intelligence dashboard for Grid Dynamics' GTM Automotive team that helps Dave Zabihaylo and his pursuit teams research enterprise prospects, identify the right contacts, plan outreach strategies, and evolve their approach based on real engagement outcomes. The tool serves as the single source of truth for account intelligence — combining auto-refreshed public data with private pursuit notes — so any team member can be briefed on any account at any time.
+
+**Core Value:** Every pursuit team member can open this tool and get a current, actionable briefing on any account — who to target, what to pitch, how to reach them, and what we've learned so far.
+
+### Constraints
+
+- **Hosting**: Railway (railway.app) — current deployment, auto-deploys from GitHub main branch
+- **AI Backend**: Anthropic Claude API — already integrated, keep as primary AI engine
+- **Simplicity**: Dave values the zero-dependency, no-build-step approach — don't over-engineer the stack
+- **Security**: API keys must stay server-side; auth is simple but must exist
+- **Budget**: Token costs matter — be smart about when and how much AI is used for auto-refresh
+<!-- GSD:project-end -->
+
+<!-- GSD:stack-start source:codebase/STACK.md -->
+## Technology Stack
+
+## Languages
+- JavaScript (ES6+) - All source code and build targets
+## Runtime
+- Node.js >= 16 (per `package.json` engines field)
+- Single-file server deployment using Node.js built-in modules only
+- npm (no dependencies installed)
+- `package.json` exists but contains no external dependencies
+- Lockfile: Not used (no npm packages)
+## Frameworks
+- No framework dependencies - pure Node.js HTTP server using built-in `http` and `https` modules
+- Vanilla HTML/CSS/JavaScript - Single-page application in `index.html`
+- Chart.js 4.4.1 - For data visualization, loaded from CDN (cdnjs.cloudflare.com)
+- Google Fonts (DM Sans, DM Mono) - Loaded from fonts.googleapis.com
+- None detected
+- None - No build step required
+## Key Dependencies
+- Chart.js 4.4.1 (via CDN) - JavaScript charting library for data visualization in account panels
+- Google Fonts API - DM Sans and DM Mono typefaces
+- `http` - HTTP server creation and request handling
+- `https` - HTTPS proxy to Anthropic API
+- `fs` - File system operations (reading `index.html`)
+- `path` - Path manipulation for file serving
+- `url` - URL parsing for routing
+## Configuration
+| Variable | Purpose | Required |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | API authentication to Anthropic Claude API | Yes |
+| `APP_PASSWORD` | Password for basic auth to the web UI | Yes |
+| `PORT` | HTTP server port (Railway auto-assigns, defaults to 3000) | No (default: 3000) |
+- No build configuration - Direct Node.js execution via `node server.js`
+- Railway deployment: `railway.toml` specifies Nixpacks builder and start command
+## Platform Requirements
+- Node.js 16+ installed locally
+- Internet access for Google Fonts and Chart.js CDN (cdnjs.cloudflare.com, fonts.googleapis.com)
+- Anthropic API key from https://console.anthropic.com
+- Hosted on Railway (railway.app)
+- Linked to GitHub repo: `dzabihaylo/account-planning`
+- Auto-deploys on push to main branch
+- Railway provides `PORT` environment variable automatically
+## Summary
+<!-- GSD:stack-end -->
+
+<!-- GSD:conventions-start source:CONVENTIONS.md -->
+## Conventions
+
+## Naming Patterns
+- Lowercase with extension: `server.js`, `index.html`, `package.json`
+- No separators in filenames (no kebab-case or snake_case)
+- camelCase for all function names: `showAccount()`, `sendMsg()`, `filterAccounts()`, `initAIPanel()`
+- Descriptive verb-first pattern: `show*`, `send*`, `add*`, `remove*`, `filter*`, `init*`
+- Handler functions use compound names: `sendChip()`, `sendMsg()`, `removeTyping()`
+- camelCase throughout: `currentAccount`, `chatHistories`, `typingId`, `container`
+- Prefix patterns for IDs: `inp-${id}`, `msgs-${id}`, `panel-${id}`, `sb-${id}`
+- Constants use UPPER_SNAKE_CASE: `API_KEY`, `APP_PASSWORD`, `PORT`, `ACCOUNTS`, `GD_CONTEXT`
+- kebab-case for all classes: `.topnav`, `.sidebar-item`, `.account-panel`, `.acct-header`, `.msg-av`, `.exec-card`
+- Prefix pattern: `.acct-*` for account-related, `.msg-*` for messages, `.exec-*` for executive cards, `.ai-*` for AI panel
+- State classes with suffix: `.active`, `.show` (e.g., `.sidebar-item.active`)
+- kebab-case with compound structure: `panel-${id}`, `msgs-${id}`, `inp-${id}`, `chips-${id}`, `acctSearch`, `acctCount`, `mainContent`
+- Pattern: `{component}-{account-id}` or global singletons like `sidebar`, `mainContent`
+- kebab-case: `--dark`, `--surface`, `--text`, `--accent`, `--muted`, `--border`
+- Color hierarchy: base colors (`--dark`, `--mid`) → semantic colors (`--text`, `--muted`, `--accent`) → status colors (`--green`, `--red`, `--gold`)
+## Code Style
+- No automated formatter (Prettier not used)
+- Manual formatting observed:
+- No ESLint or other linter configured
+- No `.eslintrc`, `.prettierrc`, or similar config files
+- Code style enforced by manual review only
+- Practically unbounded - see `index.html` lines with inline CSS/HTML blocks
+- Server.js keeps URLs and longer strings on single lines
+## Import Organization
+- Node.js built-in modules listed first: `http`, `https`, `fs`, `path`, `url`
+- No external imports (dependencies intentionally avoided)
+- Order: protocol modules (`http`, `https`), then file system (`fs`), then utilities (`path`, `url`)
+- External scripts in `<head>`: Chart.js from CDN
+- Google Fonts imported in CSS `@import`
+- Inline JavaScript at end of `<body>` with `<script>` tag
+- No module system (CommonJS, ES6 modules, or bundler)
+## Error Handling
+- Startup validation: Synchronous checks at module load for `ANTHROPIC_API_KEY` and `APP_PASSWORD`
+- JSON parsing: try-catch wrapper in `/api/claude` endpoint (`try { JSON.parse() } catch (e)`)
+- Upstream API errors: `.on('error')` callback on https.request
+- File read errors: Callback-based with `fs.readFile((err, data) => { if (err) ... })`
+- Try-catch in async `sendMsg()` function around fetch and JSON parsing
+- On fetch error: catches exception and displays `'There was an error. Please try again.'` to user
+- No explicit validation - relies on API response structure
+- Silent fallback: Missing data properties checked with optional chaining in display logic
+## Logging
+- Startup info: `console.log()` with formatted message
+- Errors: `console.error()` for startup failures
+- Upstream errors: `console.error('Anthropic API error:', e.message)`
+- No console logging in production code
+- Messages only via UI (toast/modal patterns not visible, but errors shown in chat)
+## Comments
+- Minimal commenting observed - code is largely self-documenting
+- Section dividers in HTML: `<!-- ═══════════════════ ACCOUNT NAME ═══════════════════ -->`
+- HTML structure comments: Near closing tags for complex sections
+- No JSDoc or TSDoc used
+## Function Design
+- Utility functions: 2-8 lines (`getCookies()`, `isAuthenticated()`, `addTyping()`, `removeTyping()`)
+- Handler functions: 5-15 lines (`showAccount()`, `showTab()`, `sendChip()`)
+- Larger functions: `sendMsg()` (async, ~30 lines with API call), `initAIPanel()` (~15 lines with HTML generation)
+- Few parameters per function (0-2 typical)
+- Single responsibility: each function does one thing
+- Most functions return `undefined` (mutations on DOM or state)
+- Async functions return Promises (e.g., `sendMsg()` is async)
+- Utility functions return values: `getCookies()` returns object, `isAuthenticated()` returns boolean
+- Global variables: `chatHistories`, `currentAccount`, `ACCOUNTS`, `GD_CONTEXT`
+- Closures: Minimal use of closures; mostly linear, functional flow
+- Event handlers: Inline `onclick` attributes in HTML (traditional pattern, no addEventListener in JS)
+## Module Design
+- Single monolithic file: `index.html` contains all markup, styles, and JavaScript (~1,227 lines)
+- No separation of concerns into modules
+- Data centralized in `ACCOUNTS` object (all 13 accounts in single const)
+- System prompt in `GD_CONTEXT` constant
+- Single file: `server.js` (no modules, ~190 lines)
+- Functional structure: Constants, helper functions, request handler, server initialization
+- No separation into routes/middleware layers (monolithic handler function)
+- Frontend: None (HTML page with inline `<script>`)
+- Backend: None (used with `node server.js` directly)
+- Not applicable - no module system
+## Event Handling
+- Click handlers use `onclick` attributes:
+- Input handlers:
+- No `addEventListener` calls found in codebase
+- Traditional inline event attributes throughout
+## String and Template Handling
+- String concatenation with `+` operator
+- Template literals not used (older JavaScript style)
+- Example: `'Running at http://localhost:' + PORT`
+- Template literals heavily used: `` `${value}` ``
+- HTML generation via `.innerHTML` with template literals in `initAIPanel()`
+- String replacement for formatting messages:
+## Constants and Magic Numbers
+- Environment variables as constants at top:
+- HTTP status codes inline: `200`, `302`, `400`, `401`, `404`, `502`
+- Hardcoded API paths: `/api/claude`, `/login`, `/`, `/index.html`
+- CSS color variables centralized in `:root { --color: value; }`
+- Account data in `ACCOUNTS` object (data-first design)
+- Grid breakpoint for responsive: `900px`
+- Magic values for messaging: `max_tokens: 1000` in fetch body
+<!-- GSD:conventions-end -->
+
+<!-- GSD:architecture-start source:ARCHITECTURE.md -->
+## Architecture
+
+## Pattern Overview
+- Single HTML file containing frontend + all business logic (no build step)
+- Stateless Node.js server handling auth, static serving, and API proxying
+- Browser-based session state (in-memory chat histories per account)
+- Server-side API key injection for security (key never exposed to client)
+- No database—all intelligence data embedded in frontend as JavaScript objects
+## Layers
+- Purpose: HTTP server, authentication enforcement, API proxying to Anthropic
+- Location: `server.js`
+- Contains: Cookie parsing, password validation, request routing, HTTPS forwarding
+- Depends on: Node.js built-in modules (http, https, fs, path, url)
+- Used by: All client requests
+- Purpose: Interactive UI, account management, AI chat interface, account data rendering
+- Location: `index.html` (all-in-one: ~1,226 lines)
+- Contains: CSS styling, HTML structure, JavaScript application logic, account data objects
+- Depends on: Chart.js (CDN), Google Fonts (CDN), server endpoints (/api/claude)
+- Used by: Browser, renders to user
+- Purpose: Environment-based runtime configuration
+- Contains: API keys (server-side only), app password, port binding
+- Depends on: process.env variables (ANTHROPIC_API_KEY, APP_PASSWORD, PORT)
+## Data Flow
+- **Server state:** Minimal. No sessions, no database. Only environment variables loaded at startup.
+- **Client state:** 
+- **Persistence:** None. Chat histories reset on page reload. No server-side storage.
+## Key Abstractions
+- Purpose: Single source of truth for all 13 account profiles (intelligence, KPIs, contexts)
+- Examples: `ACCOUNTS.gm`, `ACCOUNTS.mahle`, `ACCOUNTS.rocket`
+- Pattern: Key-value map where each account ID maps to object with: name, sector, hq, revenue, employees, context (full intelligence string sent to Claude)
+- Located in: `index.html` lines 1080-1094
+- Purpose: System-level context about Grid Dynamics organization, sent with every AI request
+- Pattern: Template string explaining Grid Dynamics value props, Dave Zabihaylo role, differentiation vs competitors
+- Located in: `index.html` lines 1096
+- Combined with: Account-specific data (ACCOUNT, SECTOR, HQ, REVENUE, EMPLOYEES, account context) to form final system prompt
+- Purpose: Maintain conversation state per account during user session
+- Pattern: `chatHistories[accountId] = [{role: 'user', content: '...'}, {role: 'assistant', content: '...'}]`
+- Located in: `index.html` line 1098
+- Used by: `sendMsg()` to build Anthropic API messages array
+- Purpose: Each account has a hidden/shown div with tabs for different intelligence views
+- Pattern: `<div class="account-panel" id="panel-{accountId}">` containing `acct-header`, `acct-tabs`, `tab-pane` divs
+- Tabs per account: Overview, Tech Stack, Talent Signals, Executives, AI Chat
+- Located in: `index.html` lines 352-1078 (13 panels, one per account)
+- Shown/hidden by: `showAccount()` and `showTab()` functions
+## Entry Points
+- Location: `server.js` lines 184-190
+- Triggers: `node server.js` command at startup
+- Responsibilities: 
+- Location: `index.html` lines 294-1223
+- Triggers: Page load after successful authentication
+- Responsibilities:
+- Location: `server.js` lines 116-162
+- Path: POST `/api/claude`
+- Triggers: `fetch('/api/claude', {...})` from browser after user submits AI question
+- Responsibilities:
+## Error Handling
+- **Server Auth Errors:** Missing env vars trigger `process.exit(1)` with console error (lines 11-18)
+- **Invalid JSON on /api/claude:** Return 400 with `{error: 'Invalid JSON'}` (lines 121-127)
+- **Anthropic API Errors:** Catch via `proxy.on('error')`, return 502 with error detail (lines 153-157)
+- **AI Chat Errors (browser):** Catch fetch() exception, display generic "There was an error" message to user (lines 1176-1179)
+- **File Not Found (index.html):** Return 404 "index.html not found" (lines 169-172)
+- **Unauthenticated Request:** Silently redirect to login page (no error message, just show LOGIN_PAGE)
+## Cross-Cutting Concerns
+- Server startup confirmation to stdout (lines 186-189)
+- Console.error for Anthropic API failures (line 154)
+- No persistent logging; all output to console
+- No client-side logging
+- Server validates password on login (line 94)
+- Server validates presence of environment variables (lines 11-18)
+- Browser validates message text non-empty before sending (line 1151)
+- No schema validation on API request/response bodies
+- Cookie-based: `gd_auth` cookie must equal `APP_PASSWORD` value
+- Applied globally: Every request checked via `isAuthenticated()` before serving authenticated content
+- Cookies set with HttpOnly, SameSite=Strict for basic security
+- No token expiration; cookie persists until deleted by browser
+- Headers set permissively: `Access-Control-Allow-Origin: *` (line 77)
+- Allows GET, POST, OPTIONS methods (line 78)
+- Allows Content-Type header (line 79)
+- Handles preflight OPTIONS requests (lines 81-85)
+<!-- GSD:architecture-end -->
+
+<!-- GSD:skills-start source:skills/ -->
+## Project Skills
+
+No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, or `.github/skills/` with a `SKILL.md` index file.
+<!-- GSD:skills-end -->
+
+<!-- GSD:workflow-start source:GSD defaults -->
+## GSD Workflow Enforcement
+
+Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+
+Use these entry points:
+- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
+- `/gsd-debug` for investigation and bug fixing
+- `/gsd-execute-phase` for planned phase work
+
+Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
+<!-- GSD:workflow-end -->
+
+<!-- GSD:profile-start -->
+## Developer Profile
+
+> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
+> This section is managed by `generate-claude-profile` -- do not edit manually.
+<!-- GSD:profile-end -->
