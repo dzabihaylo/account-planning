@@ -77,6 +77,8 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
+  display: flex;
+  flex-direction: column;
 }
 .sidebar-section { padding: 0 12px 8px; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 12px; }
 .sidebar-item {
@@ -283,6 +285,124 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 /* DIVIDER */
 .div { height: 1px; background: var(--border); margin: 16px 0; }
 
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(8,12,22,0.85);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  padding: 24px;
+  max-width: 480px;
+  width: calc(100% - 32px);
+}
+.modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.modal-hdr h2 {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+}
+.modal-hdr-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+}
+.modal-body { display: flex; flex-direction: column; gap: 16px; }
+.modal-ftr {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+}
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 11px; font-weight: 500; color: var(--muted); }
+.form-input {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: var(--font);
+  outline: none;
+  width: 100%;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--muted); }
+.form-error { font-size: 11px; color: var(--red); display: none; }
+.form-error.show { display: block; }
+
+/* BUTTON VARIANTS */
+.btn { border-radius: 6px; padding: 7px 16px; font-size: 13px; font-family: var(--font); cursor: pointer; border: none; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #2563EB; }
+.btn-primary:disabled { opacity: 0.6; pointer-events: none; }
+.btn-secondary { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
+.btn-secondary:hover { background: rgba(255,255,255,0.04); }
+.btn-destructive { background: transparent; border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+.btn-destructive:hover { background: rgba(239,68,68,0.08); }
+
+/* SIDEBAR ADD */
+.sidebar-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  font-family: var(--font);
+}
+.sidebar-add:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+
+/* ACCOUNT HEADER ACTIONS */
+.acct-actions { display: flex; gap: 8px; align-items: center; margin-left: auto; opacity: 0.4; transition: opacity 0.15s; }
+.acct-header:hover .acct-actions { opacity: 1; }
+.acct-action-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font);
+}
+.acct-action-btn:hover { border-color: var(--border2); color: var(--text); }
+.acct-action-btn.del:hover { border-color: rgba(239,68,68,0.3); color: var(--red); }
+
+/* EMPTY STATE */
+.empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-state h3 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+.empty-state p { font-size: 13px; }
+
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .g2,.g3,.g4 { grid-template-columns: 1fr; }
@@ -296,848 +416,267 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 <nav class="topnav">
   <div class="topnav-logo">Grid Dynamics <span>/ Intel Hub</span></div>
   <input class="topnav-search" id="acctSearch" placeholder="Search accounts..." oninput="filterAccounts(this.value)" />
-  <div class="topnav-count" id="acctCount">13 accounts</div>
+  <div class="topnav-count" id="acctCount">0 accounts</div>
 </nav>
 
 <div class="layout">
 <aside class="sidebar" id="sidebar">
-  <div class="sidebar-section">Automotive OEM</div>
-  <button class="sidebar-item" onclick="showAccount('gm',this)" id="sb-gm">
-    <span class="sidebar-dot" style="background:#0170CE"></span>General Motors<span class="sidebar-revenue">$187B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('mercedes',this)" id="sb-mercedes">
-    <span class="sidebar-dot" style="background:#94A3B8"></span>Mercedes<span class="sidebar-revenue">$160B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('volvo',this)" id="sb-volvo">
-    <span class="sidebar-dot" style="background:#3B82F6"></span>Volvo Group<span class="sidebar-revenue">$50B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('rivian',this)" id="sb-rivian">
-    <span class="sidebar-dot" style="background:#22C55E"></span>Rivian<span class="sidebar-revenue">$4.97B</span>
-  </button>
-  <div class="sidebar-section">Automotive Tier 1</div>
-  <button class="sidebar-item active" onclick="showAccount('mahle',this)" id="sb-mahle">
-    <span class="sidebar-dot" style="background:#F59E0B"></span>MAHLE<span class="sidebar-revenue">$12.6B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('magna',this)" id="sb-magna">
-    <span class="sidebar-dot" style="background:#3B82F6"></span>Magna<span class="sidebar-revenue">$42.8B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('forvia',this)" id="sb-forvia">
-    <span class="sidebar-dot" style="background:#14B8A6"></span>Forvia<span class="sidebar-revenue">$29.8B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('bosch',this)" id="sb-bosch">
-    <span class="sidebar-dot" style="background:#EF4444"></span>Bosch<span class="sidebar-revenue">$99.7B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('harman',this)" id="sb-harman">
-    <span class="sidebar-dot" style="background:#A78BFA"></span>Harman<span class="sidebar-revenue">$11B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('dms',this)" id="sb-dms">
-    <span class="sidebar-dot" style="background:#22C55E"></span>DMS / Voltava<span class="sidebar-revenue">~$600M</span>
-  </button>
-  <div class="sidebar-section">Financial Services</div>
-  <button class="sidebar-item" onclick="showAccount('rocket',this)" id="sb-rocket">
-    <span class="sidebar-dot" style="background:#EF4444"></span>Rocket<span class="sidebar-revenue">$5.1B</span>
-  </button>
-  <button class="sidebar-item" onclick="showAccount('uwm',this)" id="sb-uwm">
-    <span class="sidebar-dot" style="background:#F59E0B"></span>UWM<span class="sidebar-revenue">~$3.5B</span>
-  </button>
-  <div class="sidebar-section">Energy &amp; Utilities</div>
-  <button class="sidebar-item" onclick="showAccount('dte',this)" id="sb-dte">
-    <span class="sidebar-dot" style="background:#14B8A6"></span>DTE Energy<span class="sidebar-revenue">$12.5B</span>
-  </button>
+  <!-- Populated by loadAccounts() -->
 </aside>
 
 <main class="main" id="mainContent">
-
-<!-- ═══════════════════ GENERAL MOTORS ═══════════════════ -->
-<div class="account-panel" id="panel-gm">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Automotive OEM &middot; NYSE: GM &middot; Active Engagement</div>
-    <div class="acct-name"><strong>General Motors</strong> Company</div>
-    <div class="acct-sub">Detroit, Michigan &middot; Buick, Cadillac, Chevrolet, GMC &middot; Founded 1908</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$187.4B</div><div class="kpi-label">FY2024 Revenue</div><div class="kpi-delta" style="color:var(--green)">+9.1% YoY</div></div>
-      <div><div class="kpi-val">$9.2B</div><div class="kpi-label">R&amp;D Spend</div><div class="kpi-delta" style="color:var(--muted)">5.4% of revenue</div></div>
-      <div><div class="kpi-val">$10.9B</div><div class="kpi-label">ICT Spend 2024</div></div>
-      <div><div class="kpi-val">~163,000</div><div class="kpi-label">Employees</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('gm','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('gm','financials',this)">Financials</button>
-    <button class="acct-tab" onclick="showTab('gm','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('gm','outsourcing',this)">Outsourcing</button>
-    <button class="acct-tab" onclick="showTab('gm','execs',this)">Executives</button>
-    <button class="acct-tab" onclick="showTab('gm','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="gm-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position &middot; Active Account</div>GM is a record-profit year ($14.9B net income FY2024) with $10.9B in ICT spend. The software org was restructured in Q4 2025 following Cruise shutdown and Dave Richardson departure. Sterling Anderson (ex-Tesla) now leads Software and Services. This is a vendor relationship reset moment. Grid Dynamics has active Ford engagement which provides direct credibility. Best entry: AI Observability and MLOps adjacent to the Google Cloud and NVIDIA stack, Snowflake data engineering, and Software-Defined Vehicle platform engineering under the new software org.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Strategic Signals</div>
-          <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">Software org restructured Q4 2025. Sterling Anderson (ex-Tesla) appointed SVP. Vendor relationships reset.</div><div class="sig-meta">TIMING WINDOW</div></div></div>
-          <div class="signal"><div class="sig-icon">&#9729;</div><div class="sig-body"><div class="sig-text">Dual cloud: Google Cloud (AI/OnStar) + Microsoft Azure (dev tools). Both are GD competency areas.</div><div class="sig-meta">TECH ALIGNMENT</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128200;</div><div class="sig-body"><div class="sig-text">$10.9B ICT spend. Record profit year. Budget headroom for AI services is significant.</div><div class="sig-meta">DEAL SIZE UPSIDE</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128274;</div><div class="sig-body"><div class="sig-text">Cruise shutdown freed engineering talent; creates institutional knowledge gap in autonomy stack.</div><div class="sig-meta">KNOWLEDGE GAP</div></div></div>
-        </div>
-        <div class="card"><div class="card-label">Revenue by Segment (est.)</div>
-          <div class="bar-row"><div class="bar-label">GM North America</div><div class="bar-track"><div class="bar-fill" style="width:72%"></div></div><div class="bar-pct">~72%</div></div>
-          <div class="bar-row"><div class="bar-label">GM International</div><div class="bar-track"><div class="bar-fill" style="width:18%"></div></div><div class="bar-pct">~18%</div></div>
-          <div class="bar-row"><div class="bar-label">GM Financial</div><div class="bar-track"><div class="bar-fill" style="width:10%"></div></div><div class="bar-pct">~10%</div></div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="gm-financials">
-      <div class="g4">
-        <div class="card"><div class="stat-lbl">FY2024 Revenue</div><div class="stat-val">$<strong>187.4</strong>B</div><div class="stat-delta" style="color:var(--green)">+9.1% YoY</div></div>
-        <div class="card"><div class="stat-lbl">Net Income 2024</div><div class="stat-val">$<strong>14.9</strong>B</div><div class="stat-delta" style="color:var(--green)">Record +21%</div></div>
-        <div class="card"><div class="stat-lbl">R&amp;D Spend</div><div class="stat-val">$<strong>9.2</strong>B</div><div class="stat-delta" style="color:var(--muted)">5.4% of revenue</div></div>
-        <div class="card"><div class="stat-lbl">ICT Spend</div><div class="stat-val">$<strong>10.9</strong>B</div><div class="stat-delta" style="color:var(--muted)">est. GlobalData</div></div>
-      </div>
-      <div class="hl"><div class="hl-label">Financial Context</div>FY2024 was a record profit year despite $5B+ in special charges (Cruise shutdown, China JV write-downs). Outside of those items, operational performance was strong. The $10.9B ICT spend is larger than most enterprise targets and supports significant services opportunity across AI, data engineering, and cloud modernization workloads.</div>
-    </div>
-    <div class="tab-pane" id="gm-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Cloud &amp; Infrastructure</div><div class="tags"><span class="tag partner">Microsoft Azure</span><span class="tag partner">Google Cloud</span><span class="tag">Azure DevOps</span><span class="tag">Azure Dev Box</span><span class="tag">Google Dialogflow</span><span class="tag">OnStar Platform</span></div></div>
-        <div class="card"><div class="card-label">AI &amp; Machine Learning</div><div class="tags"><span class="tag key">Generative AI (Google Cloud)</span><span class="tag key">NVIDIA AI (vehicles + mfg)</span><span class="tag">Predictive Analytics</span><span class="tag">Computer Vision (mfg)</span><span class="tag">Super Cruise ADAS</span><span class="tag">Geospatial AI</span></div></div>
-        <div class="card"><div class="card-label">Data &amp; Analytics</div><div class="tags"><span class="tag key">Snowflake</span><span class="tag">Azure Databricks</span><span class="tag">Power BI</span><span class="tag">Workday</span><span class="tag">Real-time Telematics</span></div></div>
-        <div class="card"><div class="card-label">Enterprise &amp; Dev Tools</div><div class="tags"><span class="tag">SAP</span><span class="tag">ServiceNow</span><span class="tag">Siemens Teamcenter (PLM)</span><span class="tag">GitHub / GitHub Copilot</span><span class="tag">Jenkins</span><span class="tag">AutoCAD / CATIA</span></div></div>
-      </div>
-      <div class="card"><div class="card-label">Key Technology Partnerships</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:4px">
-          <div style="font-size:13px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border)"><div style="font-weight:500;color:#4285F4;margin-bottom:4px">Google Cloud</div><div style="font-size:12px;color:var(--muted)">AI/ML, OnStar IVA, Dialogflow, generative AI rollout</div></div>
-          <div style="font-size:13px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border)"><div style="font-weight:500;color:#00A4EF;margin-bottom:4px">Microsoft</div><div style="font-size:12px;color:var(--muted)">Azure cloud, Dev Box, developer environments</div></div>
-          <div style="font-size:13px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border)"><div style="font-weight:500;color:#76B900;margin-bottom:4px">NVIDIA</div><div style="font-size:12px;color:var(--muted)">Next-gen vehicle AI, manufacturing AI (expanded 2025)</div></div>
-          <div style="font-size:13px;padding:10px;background:rgba(255,255,255,0.03);border-radius:6px;border:1px solid var(--border)"><div style="font-weight:500;color:#29B5E8;margin-bottom:4px">Snowflake</div><div style="font-size:12px;color:var(--muted)">Data warehousing, cross-system ERP migration</div></div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="gm-outsourcing">
-      <div class="hl"><div class="hl-label">Grid Dynamics Entry Opportunity</div>The GM outsourcing landscape is dominated by large Indian SIs (HCL, Cognizant, Infosys) in commodity workloads. Grid Dynamics differentiates through AI-native delivery and cloud engineering depth. Highest-value entry points: (1) AI Observability and MLOps adjacent to the Google Cloud and NVIDIA stack, (2) Snowflake-based data engineering modernization, (3) Software-Defined Vehicle platform engineering under Sterling Anderson's new org.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Top Providers by Workload Volume (est.)</div>
-          <div class="bar-row"><div class="bar-label">HCL</div><div class="bar-track"><div class="bar-fill" style="width:74%"></div></div><div class="bar-pct">22%</div></div>
-          <div class="bar-row"><div class="bar-label">Cognizant</div><div class="bar-track"><div class="bar-fill" style="width:63%"></div></div><div class="bar-pct">19%</div></div>
-          <div class="bar-row"><div class="bar-label">Infosys</div><div class="bar-track"><div class="bar-fill" style="width:53%"></div></div><div class="bar-pct">16%</div></div>
-          <div class="bar-row"><div class="bar-label">Capgemini</div><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><div class="bar-pct">9%</div></div>
-          <div class="bar-row"><div class="bar-label">Accenture</div><div class="bar-track"><div class="bar-fill" style="width:27%"></div></div><div class="bar-pct">8%</div></div>
-          <div class="bar-row"><div class="bar-label">NTT Data</div><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><div class="bar-pct">6%</div></div>
-          <div class="bar-row"><div class="bar-label">Deloitte</div><div class="bar-track"><div class="bar-fill" style="width:17%"></div></div><div class="bar-pct">5%</div></div>
-          <div class="bar-row"><div class="bar-label">Others</div><div class="bar-track"><div class="bar-fill" style="width:50%"></div></div><div class="bar-pct">15%</div></div>
-        </div>
-        <div class="card"><div class="card-label">Workload Categories</div>
-          <div class="signal"><div class="sig-icon">&#128202;</div><div class="sig-body"><div class="sig-text">Application Development: HCL leads (18%)</div><div class="sig-meta">COMMODITY</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128202;</div><div class="sig-body"><div class="sig-text">Data Engineering: Cognizant leads (23%)</div><div class="sig-meta">GD ENTRY POINT</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128202;</div><div class="sig-body"><div class="sig-text">BI &amp; Analytics: Infosys leads (22%)</div><div class="sig-meta">GD ENTRY POINT</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128202;</div><div class="sig-body"><div class="sig-text">DevOps: Cognizant leads (22%)</div><div class="sig-meta">COMMODITY</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128202;</div><div class="sig-body"><div class="sig-text">Product Support: HCL dominates (41%)</div><div class="sig-meta">AVOID</div></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="gm-execs">
-      <div class="hl"><div class="hl-label">Contact Strategy</div>Post-restructuring, Software and Services under Sterling Anderson is the primary entry door. Fred Killeen (CIO, reports to Barra) controls enterprise IT budget. John Anderson (Head of AI Research) is the technical champion path for AI Observability conversations. Bhavik Hora (AI Platform Owner, Ford-adjacent) is an existing warm contact.</div>
-      <div class="exec-grid">
-        <div class="exec-card"><div class="exec-av">MB</div><div class="exec-name">Mary T. Barra</div><div class="exec-title">Chair &amp; CEO</div><div class="exec-loc">Detroit, MI</div></div>
-        <div class="exec-card"><div class="exec-av">FK</div><div class="exec-name">Fred Killeen</div><div class="exec-title">VP Global IT &amp; CIO</div><div class="exec-loc">Detroit, MI</div></div>
-        <div class="exec-card"><div class="exec-av">GG</div><div class="exec-name">Gil Golan</div><div class="exec-title">CTO &amp; VP Global R&amp;D</div><div class="exec-loc">Detroit, MI</div></div>
-        <div class="exec-card"><div class="exec-av">SA</div><div class="exec-name">Sterling Anderson</div><div class="exec-title">SVP Software &amp; Services (Nov 2025)</div><div class="exec-loc">Mountain View, CA</div><div class="exec-new">NEW &mdash; ex-Tesla</div></div>
-        <div class="exec-card"><div class="exec-av">JA</div><div class="exec-name">John Anderson</div><div class="exec-title">Head of AI Research (Jul 2025)</div><div class="exec-loc">Mountain View, CA</div><div class="exec-new">NEW &mdash; ex-Google</div></div>
-        <div class="exec-card"><div class="exec-av">EK</div><div class="exec-name">Edward Kummer</div><div class="exec-title">Chief Digital Officer</div><div class="exec-loc">Detroit, MI</div></div>
-        <div class="exec-card"><div class="exec-av">MH</div><div class="exec-name">Michael Hanley</div><div class="exec-title">CISO (Dec 2024)</div><div class="exec-loc">Detroit, MI</div><div class="exec-new">NEW &mdash; ex-GitHub CTO</div></div>
-        <div class="exec-card"><div class="exec-av">BC</div><div class="exec-name">Baris Cetinok</div><div class="exec-title">Co-Head Software &amp; Services</div><div class="exec-loc">Mountain View, CA</div></div>
-        <div class="exec-card"><div class="exec-av">PJ</div><div class="exec-name">Paul Jacobson</div><div class="exec-title">CFO</div><div class="exec-loc">Detroit, MI</div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="gm-ai"><div id="gm-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MAHLE ═══════════════════ -->
-<div class="account-panel active" id="panel-mahle">
-  <div class="acct-header" style="--glow:rgba(245,158,11,0.08)">
-    <div class="acct-tag">Account Intelligence &middot; Tier 1 Supplier</div>
-    <div class="acct-name"><strong>MAHLE</strong> GmbH</div>
-    <div class="acct-sub">Stuttgart, Germany &middot; Global Automotive Components &middot; Founded 1920</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$12.6B</div><div class="kpi-label">FY2024 Revenue</div><div class="kpi-delta" style="color:var(--red)">-5.6% organic</div></div>
-      <div><div class="kpi-val">~64,000</div><div class="kpi-label">Employees</div><div class="kpi-delta" style="color:var(--red)">-4,700 in 2024</div></div>
-      <div><div class="kpi-val">160+</div><div class="kpi-label">Production Sites</div></div>
-      <div><div class="kpi-val">12</div><div class="kpi-label">R&amp;D Centers</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('mahle','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('mahle','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('mahle','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('mahle','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="mahle-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>MAHLE is under financial pressure (revenue decline, headcount reductions, Ba2 Moody's rating) but is actively investing in electrification and thermal management. The cost pressure creates demand for AI-driven efficiency tools. Best angle: manufacturing AI observability, predictive maintenance, and digital supply chain optimization for their EV component lines.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Focus Areas</div>
-          <div class="tags"><span class="tag key">Electrification</span><span class="tag key">Thermal Management</span><span class="tag">Fuel Cells</span><span class="tag">Hydrogen</span><span class="tag">EV Components</span><span class="tag">Filtration</span></div>
-        </div>
-        <div class="card"><div class="card-label">Priority Signals</div>
-          <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">Active restructuring and headcount reduction creates efficiency mandate</div><div class="sig-meta">COST PRESSURE PLAY</div></div></div>
-          <div class="signal"><div class="sig-icon">&#128200;</div><div class="sig-body"><div class="sig-text">EV and thermal mgmt investment continues despite revenue decline</div><div class="sig-meta">GROWTH POCKET</div></div></div>
-        </div>
-      </div>
-      <div class="card"><div class="card-label">Key Executives</div>
-        <div class="exec-grid">
-          <div class="exec-card"><div class="exec-av">AH</div><div class="exec-name">Arnd Franz</div><div class="exec-title">CEO</div><div class="exec-loc">Stuttgart, Germany</div></div>
-          <div class="exec-card"><div class="exec-av">MK</div><div class="exec-name">Michael Kleinkes</div><div class="exec-title">CTO</div><div class="exec-loc">Stuttgart, Germany</div></div>
-          <div class="exec-card"><div class="exec-av">NR</div><div class="exec-name">North America Leadership</div><div class="exec-title">Multiple Michigan / Ohio locations</div><div class="exec-loc">Marne, MI</div></div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="mahle-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Digital &amp; IT Stack</div><div class="tags"><span class="tag">SAP S/4HANA</span><span class="tag">Siemens NX (CAD)</span><span class="tag">Azure Cloud</span><span class="tag">MES Systems</span><span class="tag">PLM Teamcenter</span><span class="tag">Predictive Maintenance</span></div></div>
-        <div class="card"><div class="card-label">Strategic Tech Bets</div><div class="tags"><span class="tag key">EV Drivetrain Software</span><span class="tag key">Battery Thermal AI</span><span class="tag">Digital Twin (manufacturing)</span><span class="tag">IoT Sensors</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="mahle-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">Revenue declined 5.6% organically in 2024 due to volume reductions and FX. Moody's Ba2 negative outlook. Strong mandate to reduce operating cost.</div><div class="sig-meta">FINANCIAL PRESSURE</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">MAHLE acquired full control of BHTC thermal management (Jan 2025). Integration creates data and systems complexity that Grid Dynamics can address.</div><div class="sig-meta">M&amp;A INTEGRATION OPPORTUNITY</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128274;</div><div class="sig-body"><div class="sig-text">~4,700 headcount reduction in 2024 means fewer internal IT resources. Outsourcing demand likely to increase.</div><div class="sig-meta">SERVICES DEMAND RISING</div></div></div>
-        <div class="signal"><div class="sig-icon">&#127759;</div><div class="sig-body"><div class="sig-text">28 North American production sites. Grid Dynamics Detroit presence is a differentiator for this account.</div><div class="sig-meta">LOCAL ADVANTAGE</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="mahle-ai">
-      <div id="mahle-ai-panel"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MAGNA ═══════════════════ -->
-<div class="account-panel" id="panel-magna">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Tier 1 Supplier &middot; NYSE: MGA</div>
-    <div class="acct-name"><strong>Magna</strong> International</div>
-    <div class="acct-sub">Aurora, Ontario &middot; US HQ: Troy, Michigan &middot; Founded 1957</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$42.8B</div><div class="kpi-label">FY2024 Revenue</div></div>
-      <div><div class="kpi-val">~179,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">342</div><div class="kpi-label">Mfg. Operations</div></div>
-      <div><div class="kpi-val">28</div><div class="kpi-label">Countries</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('magna','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('magna','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('magna','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('magna','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="magna-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Magna is one of the world's largest Tier 1 suppliers with a strong digital transformation agenda. CEO Swamy Kotagiri has made software-defined vehicle capabilities a strategic priority. US HQ in Troy, MI makes this a natural local account. Key angles: ADAS software, electrification platform data engineering, and smart manufacturing AI.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Business Segments</div>
-          <div class="tags"><span class="tag">Body &amp; Chassis</span><span class="tag">Power &amp; Vision</span><span class="tag">Seating</span><span class="tag">Complete Vehicles</span><span class="tag key">ADAS / Autonomy</span><span class="tag key">Electrification</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">SK</div><div class="exec-name">Swamy Kotagiri</div><div class="exec-title">CEO</div><div class="exec-loc">Aurora, ON</div></div>
-            <div class="exec-card"><div class="exec-av">VH</div><div class="exec-name">VP Technology</div><div class="exec-title">Software-Defined Vehicle lead</div><div class="exec-loc">Troy, MI</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="magna-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag">SAP</span><span class="tag">AWS</span><span class="tag">Azure</span><span class="tag">Snowflake</span><span class="tag">AUTOSAR</span><span class="tag">ROS2 (Autonomy)</span><span class="tag">Siemens Teamcenter</span></div></div>
-        <div class="card"><div class="card-label">Strategic Priorities</div><div class="tags"><span class="tag key">Software-Defined Vehicle</span><span class="tag key">ADAS Platforms</span><span class="tag">EV Battery Systems</span><span class="tag">Digital Manufacturing</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="magna-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">Magna is actively building software and ADAS capabilities to compete with pure-play tech suppliers. Services partner demand is high for AI-native development work.</div><div class="sig-meta">STRATEGIC INVESTMENT</div></div></div>
-        <div class="signal"><div class="sig-icon">&#127963;</div><div class="sig-body"><div class="sig-text">Troy, MI US headquarters puts Magna squarely in Grid Dynamics Detroit footprint. Local presence is a strong differentiator vs offshore-first SIs.</div><div class="sig-meta">LOCAL ADVANTAGE</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">CEO Kotagiri publicly committed to software-defined vehicle as core strategy. This creates budget for AI, data, and software engineering services.</div><div class="sig-meta">EXECUTIVE ALIGNMENT</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="magna-ai"><div id="magna-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ MERCEDES ═══════════════════ -->
-<div class="account-panel" id="panel-mercedes">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; OEM &middot; DAX: MBG</div>
-    <div class="acct-name"><strong>Mercedes-Benz</strong> Group AG</div>
-    <div class="acct-sub">Stuttgart, Germany &middot; Premium/Luxury Automotive &middot; Founded 1926</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$160B</div><div class="kpi-label">FY2024 Revenue</div><div class="kpi-delta" style="color:var(--red)">-4.5% YoY</div></div>
-      <div><div class="kpi-val">$7.6B</div><div class="kpi-label">R&amp;D 2024</div></div>
-      <div><div class="kpi-val">~167,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">MB.OS</div><div class="kpi-label">Vehicle OS Platform</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('mercedes','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('mercedes','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('mercedes','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('mercedes','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="mercedes-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Mercedes is building MB.OS, its own vehicle operating system, as a multi-year platform investment. Revenue is under pressure from China volume decline and pricing. R&D remains high at $7.6B. The MB.OS program creates demand for software engineering, AI integration, and data platform services. Grid Dynamics' Google Cloud relationship is relevant given Mercedes-Benz's cloud modernization efforts.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Revenue by Segment (est.)</div>
-          <div class="bar-row"><div class="bar-label">Mercedes-Benz Cars</div><div class="bar-track"><div class="bar-fill" style="width:82%"></div></div><div class="bar-pct">~82%</div></div>
-          <div class="bar-row"><div class="bar-label">Mercedes-Benz Vans</div><div class="bar-track"><div class="bar-fill" style="width:10%"></div></div><div class="bar-pct">~10%</div></div>
-          <div class="bar-row"><div class="bar-label">Financial Services</div><div class="bar-track"><div class="bar-fill" style="width:8%"></div></div><div class="bar-pct">~8%</div></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">OK</div><div class="exec-name">Ola Kallenius</div><div class="exec-title">CEO</div><div class="exec-loc">Stuttgart</div></div>
-            <div class="exec-card"><div class="exec-av">SL</div><div class="exec-name">Sabine Scheunert</div><div class="exec-title">VP Digital &amp; IT</div><div class="exec-loc">Stuttgart</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="mercedes-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Platform</div><div class="tags"><span class="tag key">MB.OS (proprietary vehicle OS)</span><span class="tag">Microsoft Azure</span><span class="tag">AWS</span><span class="tag">NVIDIA DRIVE</span><span class="tag">High Performance Computing</span><span class="tag">Qualcomm Snapdragon</span></div></div>
-        <div class="card"><div class="card-label">AI &amp; Data</div><div class="tags"><span class="tag key">MBUX AI Assistant</span><span class="tag">Generative AI (Azure OpenAI)</span><span class="tag">Predictive Quality</span><span class="tag">Supply Chain AI</span><span class="tag">Computer Vision (QA)</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="mercedes-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">China volume decline drove FY2024 revenue down. Margin pressure creates efficiency mandate for IT and digital operations.</div><div class="sig-meta">COST PRESSURE</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9881;</div><div class="sig-body"><div class="sig-text">MB.OS is a multi-year, multi-billion program to consolidate all vehicle software onto one platform. Creates large services demand for software engineering and integration.</div><div class="sig-meta">PLATFORM PROGRAM</div></div></div>
-        <div class="signal"><div class="sig-icon">&#129504;</div><div class="sig-body"><div class="sig-text">MBUX AI integration with Azure OpenAI is live. Generative AI roadmap is active. Grid Dynamics AI engineering expertise is directly relevant.</div><div class="sig-meta">AI ENTRY POINT</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="mercedes-ai"><div id="mercedes-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ FORVIA ═══════════════════ -->
-<div class="account-panel" id="panel-forvia">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Tier 1 Supplier &middot; Euronext: FRVIA</div>
-    <div class="acct-name"><strong>Forvia</strong> SE</div>
-    <div class="acct-sub">Nanterre, France &middot; North America HQ: Auburn Hills, Michigan &middot; Founded 2022 (Faurecia + HELLA)</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$29.8B</div><div class="kpi-label">FY2024 Revenue</div></div>
-      <div><div class="kpi-val">~150,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">76</div><div class="kpi-label">R&amp;D Centers</div></div>
-      <div><div class="kpi-val">Auburn Hills</div><div class="kpi-label">NA HQ (Michigan)</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('forvia','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('forvia','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('forvia','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('forvia','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="forvia-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Forvia has a North America HQ in Auburn Hills, MI, 43 sites across North America, and is pivoting toward software-defined vehicle cockpit and connectivity platforms (Appning). They are in active headcount reduction mode while investing in digital. This is a classic cost-efficiency-meets-innovation play for Grid Dynamics AI and data services.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Business Segments</div>
-          <div class="tags"><span class="tag">Seating</span><span class="tag">Interiors</span><span class="tag">Clean Mobility</span><span class="tag key">Electronics (HELLA)</span><span class="tag">Lighting</span><span class="tag key">Lifecycle Solutions</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">MF</div><div class="exec-name">Martin Fischer</div><div class="exec-title">CEO</div><div class="exec-loc">Nanterre, France</div></div>
-            <div class="exec-card"><div class="exec-av">NA</div><div class="exec-name">NA Leadership</div><div class="exec-title">North America President</div><div class="exec-loc">Auburn Hills, MI</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="forvia-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag">SAP</span><span class="tag">Azure</span><span class="tag key">Appning (in-car connectivity platform)</span><span class="tag">HELLA Electronics Stack</span><span class="tag">Digital Cockpit Software</span></div></div>
-        <div class="card"><div class="card-label">Strategic Digital Focus</div><div class="tags"><span class="tag key">Software-Defined Cockpit</span><span class="tag">EV Cockpit Systems</span><span class="tag">Hydrogen Systems</span><span class="tag">AI Quality Systems</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="forvia-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#127963;</div><div class="sig-body"><div class="sig-text">North America HQ in Auburn Hills (43 sites, 7 R&D centers). Proximity to Grid Dynamics Detroit presence is strong advantage.</div><div class="sig-meta">LOCAL ACCESS</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">EU-FORWARD headcount reduction targeting 10,000 over 5 years. Creates IT services demand as internal capacity shrinks.</div><div class="sig-meta">OUTSOURCING SIGNAL</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">Appning platform for in-car connectivity is a strategic investment. Software engineering and AI integration services directly applicable.</div><div class="sig-meta">PLATFORM ENTRY</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128274;</div><div class="sig-body"><div class="sig-text">Faurecia + HELLA integration still ongoing. Data harmonization and system integration services needed.</div><div class="sig-meta">M&amp;A INTEGRATION</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="forvia-ai"><div id="forvia-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ DMS ═══════════════════ -->
-<div class="account-panel" id="panel-dms">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Tier 1 Supplier &middot; Detroit-Based</div>
-    <div class="acct-name"><strong>Detroit Manufacturing</strong> Systems</div>
-    <div class="acct-sub">Detroit, Michigan &middot; Contract Manufacturing &amp; Assembly &middot; Founded 2012 &middot; Now part of Voltava</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">~$600M+</div><div class="kpi-label">Est. Revenue (post-merger)</div></div>
-      <div><div class="kpi-val">~2,500+</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">Detroit</div><div class="kpi-label">HQ</div></div>
-      <div><div class="kpi-val">Ford/Volvo</div><div class="kpi-label">Key Customers</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('dms','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('dms','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('dms','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="dms-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>DMS is a smaller, Detroit-rooted account that recently acquired Android Industries and Avancez to form Voltava (Jan 2026). This is a community-aligned, diversity-focused Tier 1 with strong relationships with Ford and Volvo. Post-merger integration creates data, MES, and IT consolidation needs. Grid Dynamics Detroit presence is a strong fit given shared community values and local account access.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Products &amp; Capabilities</div>
-          <div class="tags"><span class="tag">Instrument Panels</span><span class="tag">Interior Trim</span><span class="tag">Injection Molding</span><span class="tag">Value-Add Assembly</span><span class="tag">Contract Manufacturing</span></div>
-        </div>
-        <div class="card"><div class="card-label">M&amp;A Context (Jan 2026)</div>
-          <div class="signal" style="padding-top:0"><div class="sig-icon">&#128200;</div><div class="sig-body"><div class="sig-text">DMS + Android Industries + Avancez = Voltava. $160M senior secured financing. IT and systems integration mandate is immediate.</div><div class="sig-meta">INTEGRATION OPPORTUNITY</div></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="dms-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#128200;</div><div class="sig-body"><div class="sig-text">Voltava formation (Jan 2026): DMS + Android + Avancez combined. Systems integration, data consolidation, and unified manufacturing analytics needed immediately.</div><div class="sig-meta">M&amp;A INTEGRATION</div></div></div>
-        <div class="signal"><div class="sig-icon">&#127963;</div><div class="sig-body"><div class="sig-text">Headquartered in Detroit. 88% minority workforce. Grid Dynamics commitment to Detroit community resonates with DMS mission and ownership.</div><div class="sig-meta">CULTURAL ALIGNMENT</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9881;</div><div class="sig-body"><div class="sig-text">Ford and Volvo are key customers. Grid Dynamics has deep Ford relationship. This creates a warm referral path into DMS.</div><div class="sig-meta">SHARED CUSTOMER</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="dms-ai"><div id="dms-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ BOSCH ═══════════════════ -->
-<div class="account-panel" id="panel-bosch">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Technology &amp; Automotive Supplier</div>
-    <div class="acct-name"><strong>Robert Bosch</strong> GmbH</div>
-    <div class="acct-sub">Gerlingen, Germany (near Stuttgart) &middot; Technology &amp; Services Conglomerate &middot; Founded 1886</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$99.7B</div><div class="kpi-label">FY2024 Revenue</div></div>
-      <div><div class="kpi-val">$8.6B</div><div class="kpi-label">R&amp;D Spend</div></div>
-      <div><div class="kpi-val">~417,900</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">86,800</div><div class="kpi-label">R&amp;D Associates</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('bosch','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('bosch','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('bosch','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('bosch','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="bosch-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Bosch is the largest account on this list by revenue. It is a technology conglomerate spanning automotive, industrial, consumer goods, and energy. The Mobility division (61% of revenue) is the primary entry point. Bosch projects $6B+ in software and services revenue by early 2030s. AI integration into manufacturing (Vehicle Motion Management, brake-by-wire) is an active investment area. Grid Dynamics AI engineering and Google Cloud depth are directly relevant.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Revenue by Sector (FY2024)</div>
-          <div class="bar-row"><div class="bar-label">Mobility</div><div class="bar-track"><div class="bar-fill" style="width:61%"></div></div><div class="bar-pct">61%</div></div>
-          <div class="bar-row"><div class="bar-label">Consumer Goods</div><div class="bar-track"><div class="bar-fill" style="width:22%"></div></div><div class="bar-pct">22%</div></div>
-          <div class="bar-row"><div class="bar-label">Energy &amp; Building</div><div class="bar-track"><div class="bar-fill" style="width:9%"></div></div><div class="bar-pct">9%</div></div>
-          <div class="bar-row"><div class="bar-label">Industrial Technology</div><div class="bar-track"><div class="bar-fill" style="width:8%"></div></div><div class="bar-pct">8%</div></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">SH</div><div class="exec-name">Stefan Hartung</div><div class="exec-title">CEO</div><div class="exec-loc">Gerlingen, Germany</div></div>
-            <div class="exec-card"><div class="exec-av">NA</div><div class="exec-name">Bosch North America</div><div class="exec-title">Farmington Hills, MI</div><div class="exec-loc">Michigan HQ</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="bosch-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Core Technology Stack</div><div class="tags"><span class="tag">Azure</span><span class="tag">AWS</span><span class="tag">SAP</span><span class="tag">IoT Platform (Bosch)</span><span class="tag">AUTOSAR</span><span class="tag key">Vehicle Motion Mgmt AI</span><span class="tag">Brake-by-Wire</span></div></div>
-        <div class="card"><div class="card-label">Software &amp; AI Priorities</div><div class="tags"><span class="tag key">AI Sensor Fusion</span><span class="tag key">Manufacturing AI</span><span class="tag">Digital Twin</span><span class="tag">Predictive Maintenance</span><span class="tag">Edge AI</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="bosch-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">Bosch projects $6B+ in software and services revenue by early 2030s. Active investment in AI integration across all sectors.</div><div class="sig-meta">SOFTWARE GROWTH</div></div></div>
-        <div class="signal"><div class="sig-icon">&#127963;</div><div class="sig-body"><div class="sig-text">North America HQ in Farmington Hills, MI. Grid Dynamics Detroit presence is a natural fit for this account.</div><div class="sig-meta">LOCAL ADVANTAGE</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">Revenue slightly declined in 2024 (-1%) and headcount reduced. Efficiency mandate aligns with Grid Dynamics AI-driven productivity offerings.</div><div class="sig-meta">EFFICIENCY PLAY</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9881;</div><div class="sig-body"><div class="sig-text">Vehicle Motion Management AI and brake-by-wire systems require software engineering depth that Grid Dynamics can provide.</div><div class="sig-meta">TECHNICAL FIT</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="bosch-ai"><div id="bosch-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ HARMAN ═══════════════════ -->
-<div class="account-panel" id="panel-harman">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Connected Technology &middot; Samsung Subsidiary</div>
-    <div class="acct-name"><strong>HARMAN</strong> International</div>
-    <div class="acct-sub">Stamford, Connecticut &middot; Automotive &amp; Consumer Tech &middot; Samsung subsidiary since 2017</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$11B</div><div class="kpi-label">Revenue (peak)</div></div>
-      <div><div class="kpi-val">$45B</div><div class="kpi-label">Automotive Backlog</div></div>
-      <div><div class="kpi-val">~30,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">New CEO</div><div class="kpi-label">Christian Sobottka (Apr 2025)</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('harman','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('harman','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('harman','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('harman','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="harman-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>HARMAN's $45B automotive backlog signals massive committed revenue in connected vehicle technology. New CEO Christian Sobottka (April 2025) creates a leadership transition window. Samsung backing provides significant R&D investment capacity. HARMAN's focus on in-vehicle infotainment, digital cockpit, and connected services overlaps directly with Grid Dynamics' software engineering and AI capabilities.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Product Lines</div>
-          <div class="tags"><span class="tag key">Digital Cockpit</span><span class="tag key">Connected Car Systems</span><span class="tag">Infotainment</span><span class="tag">Audio (JBL, Harman Kardon)</span><span class="tag">Enterprise Automation</span><span class="tag">IoT</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">CS</div><div class="exec-name">Christian Sobottka</div><div class="exec-title">CEO (Apr 2025)</div><div class="exec-loc">Stamford, CT</div><div class="exec-new">NEW</div></div>
-            <div class="exec-card"><div class="exec-av">MM</div><div class="exec-name">Michael Mauser</div><div class="exec-title">Former CEO (departed Mar 2025)</div><div class="exec-loc">Stamford, CT</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="harman-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag key">HARMAN Ignite (cloud platform)</span><span class="tag">Samsung SmartThings</span><span class="tag">Android Automotive</span><span class="tag">QNX (BlackBerry)</span><span class="tag">OTA Update Systems</span></div></div>
-        <div class="card"><div class="card-label">AI &amp; Connected Focus</div><div class="tags"><span class="tag key">Generative AI in Cockpit</span><span class="tag">Voice AI</span><span class="tag">Predictive Personalization</span><span class="tag">Edge Computing</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="harman-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#128101;</div><div class="sig-body"><div class="sig-text">New CEO Christian Sobottka took over April 2025. Leadership transitions create vendor relationship resets. Immediate outreach window.</div><div class="sig-meta">LEADERSHIP TRANSITION</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128200;</div><div class="sig-body"><div class="sig-text">$45B automotive backlog represents committed multi-year delivery. Creates demand for software engineering scale and AI integration services.</div><div class="sig-meta">BACKLOG = DEMAND</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">Samsung ownership provides access to Galaxy ecosystem and AI research. HARMAN is integrating Samsung AI into automotive. Grid Dynamics AI engineering is relevant.</div><div class="sig-meta">AI OPPORTUNITY</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="harman-ai"><div id="harman-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ VOLVO GROUP ═══════════════════ -->
-<div class="account-panel" id="panel-volvo">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; OEM (Trucks &amp; Commercial) &middot; Nasdaq Stockholm: VOLV</div>
-    <div class="acct-name"><strong>Volvo</strong> Group</div>
-    <div class="acct-sub">Gothenburg, Sweden &middot; Trucks, Buses, Construction Equipment &middot; Founded 1927</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$49.6B</div><div class="kpi-label">FY2024 Revenue</div><div class="kpi-delta" style="color:var(--red)">-4.4% YoY</div></div>
-      <div><div class="kpi-val">~100,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">190</div><div class="kpi-label">Markets Served</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('volvo','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('volvo','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('volvo','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('volvo','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="volvo-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Note: This is Volvo Group (trucks/buses/construction), distinct from Volvo Cars. Grid Dynamics has an existing Nova Bus relationship (Volvo Group subsidiary). That relationship is a direct bridge into the broader Volvo Group account. DMS also manufacturers for Volvo, providing another warm entry point. Focus areas: electrification of fleet, autonomous trucking software, and connected fleet analytics.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Business Divisions</div>
-          <div class="tags"><span class="tag key">Volvo Trucks</span><span class="tag key">Mack Trucks</span><span class="tag">Renault Trucks</span><span class="tag">Volvo Buses</span><span class="tag key">Nova Bus (Grid Dynamics relationship)</span><span class="tag">Volvo CE (construction)</span><span class="tag">Volvo Financial Services</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">ML</div><div class="exec-name">Martin Lundstedt</div><div class="exec-title">President &amp; CEO</div><div class="exec-loc">Gothenburg, Sweden</div></div>
-            <div class="exec-card"><div class="exec-av">KG</div><div class="exec-name">Karin Gorski</div><div class="exec-title">EVP Legal &amp; Sustainability</div><div class="exec-loc">Gothenburg, Sweden</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="volvo-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag">Azure</span><span class="tag">AWS</span><span class="tag">Volvo Connect (fleet platform)</span><span class="tag">Remote Diagnostics</span><span class="tag">SAP</span><span class="tag">Dynafleet</span></div></div>
-        <div class="card"><div class="card-label">Strategic Tech Priorities</div><div class="tags"><span class="tag key">Electric Trucks (FCEV + BEV)</span><span class="tag key">Autonomous Trucking</span><span class="tag">Connected Fleet AI</span><span class="tag">Predictive Maintenance</span><span class="tag">OTA Software Updates</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="volvo-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">Grid Dynamics already has a Nova Bus (Volvo Group subsidiary) relationship. This is a direct, warm path into Volvo Group broader account.</div><div class="sig-meta">EXISTING RELATIONSHIP</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">Revenue declined in 2024 as freight market normalized. Efficiency and fleet optimization AI tools have strong ROI story.</div><div class="sig-meta">ROI STORY</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9881;</div><div class="sig-body"><div class="sig-text">Autonomous trucking investment is active. Grid Dynamics AI and data engineering capabilities are applicable to the autonomy stack.</div><div class="sig-meta">AUTONOMY PLAY</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="volvo-ai"><div id="volvo-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ RIVIAN ═══════════════════ -->
-<div class="account-panel" id="panel-rivian">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; EV OEM &middot; NASDAQ: RIVN</div>
-    <div class="acct-name"><strong>Rivian</strong> Automotive</div>
-    <div class="acct-sub">Irvine, California &middot; Normal, Illinois (manufacturing) &middot; Founded 2009</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$4.97B</div><div class="kpi-label">FY2024 Revenue</div><div class="kpi-delta" style="color:var(--green)">+12% YoY</div></div>
-      <div><div class="kpi-val">-$4.75B</div><div class="kpi-label">FY2024 Net Loss</div><div class="kpi-delta" style="color:var(--gold)">Improving trend</div></div>
-      <div><div class="kpi-val">$1B+</div><div class="kpi-label">VW Joint Venture</div></div>
-      <div><div class="kpi-val">SDV</div><div class="kpi-label">Software-First Strategy</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('rivian','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('rivian','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('rivian','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('rivian','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="rivian-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Rivian is a software-first EV company with a $1B+ JV with Volkswagen to license its SDV platform. Revenue is growing but the company is burning cash. The VW JV validates Rivian's technology and creates new commercial paths. Grid Dynamics can play in Rivian's data platform, AI/ML for vehicle personalization and OTA, and software engineering for the VW technology licensing effort.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Products &amp; Partnerships</div>
-          <div class="tags"><span class="tag">R1T Truck</span><span class="tag">R1S SUV</span><span class="tag">Commercial Van (Amazon)</span><span class="tag key">VW JV (SDV platform)</span><span class="tag key">Rivian Adventure Network</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">RS</div><div class="exec-name">RJ Scaringe</div><div class="exec-title">CEO &amp; Founder</div><div class="exec-loc">Irvine, CA</div></div>
-            <div class="exec-card"><div class="exec-av">CE</div><div class="exec-name">Claire McDonough</div><div class="exec-title">CFO</div><div class="exec-loc">Irvine, CA</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="rivian-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag key">Rivian OS (proprietary)</span><span class="tag">AWS</span><span class="tag">Snowflake</span><span class="tag">OTA Update Platform</span><span class="tag">NVIDIA DRIVE</span><span class="tag">Computer Vision</span></div></div>
-        <div class="card"><div class="card-label">Software-Defined Vehicle Focus</div><div class="tags"><span class="tag key">Zonal Architecture</span><span class="tag key">OTA at Scale</span><span class="tag">Fleet Telematics</span><span class="tag">AI Personalization</span><span class="tag key">VW SDV Licensing</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="rivian-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">VW joint venture (convertible note $1B+) validates Rivian's SDV platform as licensable technology. Creates new engineering scale requirements.</div><div class="sig-meta">PLATFORM SCALING</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128201;</div><div class="sig-body"><div class="sig-text">Company narrowing losses: adj. EBITDA loss improving from -$2.69B toward -$1.7B-$1.9B. Cost discipline creates selective outsourcing demand.</div><div class="sig-meta">SELECTIVE SPEND</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128274;</div><div class="sig-body"><div class="sig-text">Amazon commercial van contract is a large, recurring revenue stream. Fleet data analytics and optimization is a natural Grid Dynamics play.</div><div class="sig-meta">FLEET AI</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="rivian-ai"><div id="rivian-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ ROCKET ═══════════════════ -->
-<div class="account-panel" id="panel-rocket">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Fintech Platform &middot; NYSE: RKT &middot; Detroit-Based</div>
-    <div class="acct-name"><strong>Rocket</strong> Companies</div>
-    <div class="acct-sub">1050 Woodward Avenue, Detroit, Michigan &middot; Founded 1985</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$5.1B</div><div class="kpi-label">FY2024 Revenue</div><div class="kpi-delta" style="color:var(--green)">+34% YoY</div></div>
-      <div><div class="kpi-val">~14,200</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">Rocket Logic</div><div class="kpi-label">Proprietary AI Platform</div></div>
-      <div><div class="kpi-val">$46.3B</div><div class="kpi-label">Market Cap</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('rocket','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('rocket','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('rocket','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('rocket','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="rocket-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>Rocket is a Detroit-headquartered fintech powerhouse with a deeply internal-facing AI strategy (Rocket Logic, Navigator). Revenue grew 34% in 2024. CEO Varun Krishna is AI-forward and quantifies AI ROI publicly (1M+ hours saved, $40M efficiency gains). Grid Dynamics plays here in AI engineering augmentation, data platform scale, and financial services AI use cases. This is a non-auto, high-growth local account with strong AI alignment.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Business Lines</div>
-          <div class="tags"><span class="tag key">Rocket Mortgage</span><span class="tag">Rocket Homes</span><span class="tag">Rocket Money (4.1M members)</span><span class="tag">Rocket Loans</span><span class="tag">Amrock Title</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">VK</div><div class="exec-name">Varun Krishna</div><div class="exec-title">CEO</div><div class="exec-loc">Detroit, MI</div></div>
-            <div class="exec-card"><div class="exec-av">SM</div><div class="exec-name">Shrikant Malhotra</div><div class="exec-title">CTO (2024)</div><div class="exec-loc">Detroit, MI</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="rocket-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Proprietary AI Platform</div>
-          <div class="tags"><span class="tag key">Rocket Logic (AI loan origination)</span><span class="tag key">Navigator (AI workflow platform)</span><span class="tag">600+ custom internal apps</span><span class="tag">AWS</span><span class="tag">Salesforce</span><span class="tag">Data Science / ML platform</span></div>
-        </div>
-        <div class="card"><div class="card-label">AI Results (2024)</div>
-          <div class="signal" style="padding-top:0"><div class="sig-icon">&#129504;</div><div class="sig-body"><div class="sig-text">Rocket Logic: 54% more clients served per banker in Q4 2024 vs prior year</div><div class="sig-meta">PROVEN AI ROI</div></div></div>
-          <div class="signal"><div class="sig-icon">&#9201;</div><div class="sig-body"><div class="sig-text">Automation saved 1M+ hours, generated $40M in efficiency gains in 2024</div><div class="sig-meta">SCALE SIGNAL</div></div></div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="rocket-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#127968;</div><div class="sig-body"><div class="sig-text">Downtown Detroit HQ at 1050 Woodward. Grid Dynamics Detroit presence creates natural, local peer relationship. Not a remote vendor engagement.</div><div class="sig-meta">LOCAL PEER</div></div></div>
-        <div class="signal"><div class="sig-icon">&#129504;</div><div class="sig-body"><div class="sig-text">AI is not theoretical at Rocket. Navigator and Rocket Logic have measurable, public ROI. Grid Dynamics can engage as a peer in the AI conversation, not a vendor pitching concepts.</div><div class="sig-meta">AI-PEER ENGAGEMENT</div></div></div>
-        <div class="signal"><div class="sig-icon">&#128200;</div><div class="sig-body"><div class="sig-text">Revenue grew 34% YoY in 2024 with strong Q4. Growth stage companies invest in engineering scale. Grid Dynamics can support AI platform expansion.</div><div class="sig-meta">GROWTH + SCALE</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="rocket-ai"><div id="rocket-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ UWM ═══════════════════ -->
-<div class="account-panel" id="panel-uwm">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Mortgage / Fintech &middot; NYSE: UWMC &middot; Pontiac, Michigan</div>
-    <div class="acct-name"><strong>United Wholesale</strong> Mortgage</div>
-    <div class="acct-sub">585 South Blvd E, Pontiac, Michigan &middot; #1 Mortgage Lender in US &middot; Founded 1986</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">~$3.5B</div><div class="kpi-label">Est. FY2024 Revenue</div></div>
-      <div><div class="kpi-val">5,000-10,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">Pontiac</div><div class="kpi-label">Campus HQ</div></div>
-      <div><div class="kpi-val">#1 US</div><div class="kpi-label">Wholesale Mortgage Lender</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('uwm','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('uwm','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('uwm','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('uwm','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="uwm-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>UWM is the #1 wholesale mortgage lender in the US and runs a deeply tech-forward operation from a large Pontiac campus. Proprietary platforms Blink+ and BOLT differentiate UWM with broker partners. The company uses AI-driven solutions for broker workflows. Grid Dynamics can engage on AI platform engineering, data science for underwriting optimization, and broker experience enhancement. Proximity to Detroit makes this a warm local account.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Key Platforms</div>
-          <div class="tags"><span class="tag key">Blink+ (broker platform)</span><span class="tag key">BOLT (closing technology)</span><span class="tag">AI-driven broker solutions</span><span class="tag">UClose (same-day closing)</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">MI</div><div class="exec-name">Mat Ishbia</div><div class="exec-title">CEO</div><div class="exec-loc">Pontiac, MI</div></div>
-            <div class="exec-card"><div class="exec-av">AE</div><div class="exec-name">Alex Elezaj</div><div class="exec-title">Chief Strategy Officer</div><div class="exec-loc">Pontiac, MI</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="uwm-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag key">Blink+ (proprietary)</span><span class="tag key">BOLT (proprietary)</span><span class="tag">IBM DataPower</span><span class="tag">Microsoft Power Apps</span><span class="tag">AI underwriting tools</span><span class="tag">OGsys</span></div></div>
-        <div class="card"><div class="card-label">Technology Focus</div><div class="tags"><span class="tag key">AI-driven broker workflows</span><span class="tag">Automated underwriting</span><span class="tag">Digital mortgage processing</span><span class="tag">Data Science (risk)</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="uwm-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#127963;</div><div class="sig-body"><div class="sig-text">Pontiac campus, thousands of team members all on-site. Leadership values culture and in-person partnerships. Local Grid Dynamics presence is essential for this account.</div><div class="sig-meta">LOCAL ONLY</div></div></div>
-        <div class="signal"><div class="sig-icon">&#129504;</div><div class="sig-body"><div class="sig-text">UWM publicly commits to AI-driven solutions as a core competitive differentiator for broker partners. This is not a company that needs to be convinced of AI value.</div><div class="sig-meta">AI BELIEVER</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9201;</div><div class="sig-body"><div class="sig-text">Same-day closing (UClose) requires extreme process automation. Data engineering and AI workflow optimization are directly applicable.</div><div class="sig-meta">PROCESS AI</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="uwm-ai"><div id="uwm-ai-panel"></div></div>
-  </div>
-</div>
-
-<!-- ═══════════════════ DTE ENERGY ═══════════════════ -->
-<div class="account-panel" id="panel-dte">
-  <div class="acct-header">
-    <div class="acct-tag">Account Intelligence &middot; Utilities &middot; NYSE: DTE &middot; Detroit-Based Fortune 500</div>
-    <div class="acct-name"><strong>DTE</strong> Energy</div>
-    <div class="acct-sub">Detroit, Michigan &middot; Diversified Energy Company &middot; Serving Michigan 100+ years</div>
-    <div class="acct-kpis">
-      <div><div class="kpi-val">$12.5B</div><div class="kpi-label">FY2024 Revenue</div></div>
-      <div><div class="kpi-val">~10,000</div><div class="kpi-label">Employees</div></div>
-      <div><div class="kpi-val">Detroit</div><div class="kpi-label">HQ</div></div>
-      <div><div class="kpi-val">Grid of Future</div><div class="kpi-label">Strategic Program</div></div>
-    </div>
-  </div>
-  <div class="acct-tabs">
-    <button class="acct-tab active" onclick="showTab('dte','overview',this)">Overview</button>
-    <button class="acct-tab" onclick="showTab('dte','tech',this)">Tech</button>
-    <button class="acct-tab" onclick="showTab('dte','signals',this)">Signals</button>
-    <button class="acct-tab" onclick="showTab('dte','ai',this)">Ask AI</button>
-  </div>
-  <div class="acct-content">
-    <div class="tab-pane active" id="dte-overview">
-      <div class="hl"><div class="hl-label">Grid Dynamics Position</div>DTE is a Fortune 500 Detroit-based utility actively building the "energy grid of the future." They power Michigan including every auto plant in the state. Key AI use cases: predictive grid maintenance, outage prediction and response optimization, renewable energy dispatch optimization, and customer-facing AI for energy management. Grid Dynamics Detroit footprint is a direct advantage. DTE is also a natural relationship given its role as critical infrastructure for every other account on this list.</div>
-      <div class="g2">
-        <div class="card"><div class="card-label">Business Segments</div>
-          <div class="tags"><span class="tag key">DTE Electric (SE Michigan)</span><span class="tag key">DTE Gas</span><span class="tag">Power &amp; Industrial</span><span class="tag">Renewable Energy</span><span class="tag">Energy Trading</span></div>
-        </div>
-        <div class="card"><div class="card-label">Key Executives</div>
-          <div class="exec-grid" style="grid-template-columns:1fr 1fr">
-            <div class="exec-card"><div class="exec-av">JA</div><div class="exec-name">Jerry Norcia</div><div class="exec-title">CEO</div><div class="exec-loc">Detroit, MI</div></div>
-            <div class="exec-card"><div class="exec-av">MP</div><div class="exec-name">Matt Paul</div><div class="exec-title">President &amp; COO, DTE Electric</div><div class="exec-loc">Detroit, MI</div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="tab-pane" id="dte-tech">
-      <div class="g2">
-        <div class="card"><div class="card-label">Technology Stack</div><div class="tags"><span class="tag">IBM DataPower</span><span class="tag">Microsoft Power Apps</span><span class="tag">SAP</span><span class="tag">OGsys (gas ops)</span><span class="tag">Stata (analytics)</span><span class="tag">SCADA / Grid Management</span></div></div>
-        <div class="card"><div class="card-label">Digital Priorities</div><div class="tags"><span class="tag key">Smart Grid AI</span><span class="tag key">Predictive Outage Prevention</span><span class="tag">Renewable Dispatch Optimization</span><span class="tag">Customer Energy AI</span><span class="tag">IoT Sensors (grid)</span></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="dte-signals">
-      <div class="card">
-        <div class="signal"><div class="sig-icon">&#9889;</div><div class="sig-body"><div class="sig-text">DTE is investing heavily in grid modernization. "Energy grid of the future" is the stated strategic program. AI for grid optimization is a direct Grid Dynamics play.</div><div class="sig-meta">STRATEGIC PROGRAM</div></div></div>
-        <div class="signal"><div class="sig-icon">&#127963;</div><div class="sig-body"><div class="sig-text">Detroit HQ. Powers every auto plant in Michigan. Shared community investment values with Grid Dynamics Detroit presence.</div><div class="sig-meta">COMMUNITY ALIGNMENT</div></div></div>
-        <div class="signal"><div class="sig-icon">&#9749;</div><div class="sig-body"><div class="sig-text">DTE powers every other account on this prospect list. It is infrastructure for the Michigan business ecosystem and a natural relationship to cultivate.</div><div class="sig-meta">ECOSYSTEM ANCHOR</div></div></div>
-        <div class="signal"><div class="sig-icon">&#127807;</div><div class="sig-body"><div class="sig-text">Renewable energy mix increasing. Dispatch optimization AI and demand forecasting are high-value, proven use cases for Grid Dynamics to pitch.</div><div class="sig-meta">CLEAN ENERGY AI</div></div></div>
-      </div>
-    </div>
-    <div class="tab-pane" id="dte-ai"><div id="dte-ai-panel"></div></div>
-  </div>
-</div>
-
+  <!-- Populated by renderAccountPanel() -->
 </main>
 </div>
 
+<!-- Account Add/Edit Modal -->
+<div class="modal-overlay" id="accountModal" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <h2 id="modalTitle">Add Account</h2>
+      <button class="modal-hdr-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="modalAccountId" value="">
+      <div class="form-group">
+        <label class="form-label">Company name</label>
+        <input class="form-input" id="modalName" placeholder="e.g. Acme Corporation" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sector</label>
+        <input class="form-input" id="modalSector" placeholder="e.g. Automotive OEM" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Annual revenue (e.g. $12.6B)</label>
+        <input class="form-input" id="modalRevenue" placeholder="e.g. $12.6B" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Employees (e.g. 72,000)</label>
+        <input class="form-input" id="modalEmployees" placeholder="e.g. 72,000" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Headquarters city</label>
+        <input class="form-input" id="modalHQ" placeholder="e.g. Detroit, Michigan" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">AI context (account intelligence for Claude)</label>
+        <textarea class="form-input" id="modalContext" rows="4" placeholder="Key facts, technology stack, strategic signals..."></textarea>
+      </div>
+      <div class="form-error" id="modalError"></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeModal()">Discard Changes</button>
+      <button class="btn btn-primary" id="modalSaveBtn" onclick="saveAccount()">Save Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Remove Confirmation Modal -->
+<div class="modal-overlay" id="removeModal" onclick="closeRemoveModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-hdr">
+      <h2>Remove this account?</h2>
+      <button class="modal-hdr-close" onclick="closeRemoveModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="removeMsg" style="font-size:13px;color:var(--text)"></p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeRemoveModal()">Discard Changes</button>
+      <button class="btn btn-destructive" id="removeConfirmBtn" onclick="confirmRemove()">Remove Account</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const ACCOUNTS = {
-  gm: { name: 'General Motors Company', sector: 'Automotive OEM', hq: 'Detroit, Michigan', revenue: '$187.4B (FY2024)', employees: '~163,000', context: 'General Motors (NYSE: GM) is the largest US automaker. FY2024 revenue: $187.4B (+9.1% YoY), record net income of $14.9B. ICT spend: $10.9B. R&D: $9.2B (5.4% of revenue). CEO: Mary T. Barra. CIO: Fred Killeen (reports to Barra). CTO: Gil Golan. CDO: Edward Kummer. Software & Services SVP: Sterling Anderson (new Nov 2025, ex-Tesla). Head of AI Research: John Anderson (new Jul 2025, ex-Google 14 years). CISO: Michael Hanley (new Dec 2024, ex-GitHub CTO). Software org was restructured Q4 2025 following Cruise robotaxi shutdown (Dec 2024) and departure of Dave Richardson. This is a vendor relationship reset moment. Technology: Microsoft Azure (primary dev cloud, Dev Box), Google Cloud (AI/ML, OnStar IVA, Dialogflow), NVIDIA (vehicle + manufacturing AI, expanded 2025 partnership), Snowflake (major data migration), Azure Databricks, SAP, ServiceNow, Siemens Teamcenter, GitHub Copilot. Outsourcing providers: HCL (22% est., dominant in product support), Cognizant (19%, leads data engineering), Infosys (16%, leads BI/analytics), Capgemini, Accenture. Grid Dynamics differentiators: AI-native delivery vs commodity SIs, Google Cloud partnership directly relevant, Ford account relationship provides automotive AI credibility, Dave Zabihaylo is based in Detroit with direct access. Key entry points: AI Observability/MLOps for Google Cloud + NVIDIA workloads, Snowflake data engineering modernization, Software-Defined Vehicle platform engineering under Sterling Anderson.' },
-  mahle: { name: 'MAHLE GmbH', sector: 'Automotive Tier 1', hq: 'Stuttgart, Germany', revenue: '$12.6B', employees: '~64,000', context: 'MAHLE is a German automotive Tier 1 supplier focused on electrification, thermal management, filtration, and engine components. FY2024 revenue declined 5.6% organically. They cut ~4,700 employees. Moody\'s Ba2 negative rating. Key strategic focus: EV components, battery thermal management, hydrogen fuel cells. They acquired full BHTC thermal management control (Jan 2025). 28 North American production sites (Marne, MI area). Key opportunity for Grid Dynamics: manufacturing AI efficiency, M&A integration data work, EV platform data engineering.' },
-  magna: { name: 'Magna International', sector: 'Automotive Tier 1', hq: 'Aurora, ON / Troy, MI (US)', revenue: '$42.8B', employees: '~179,000', context: 'Magna International is one of the world\'s largest automotive Tier 1 suppliers. NYSE: MGA. CEO Swamy Kotagiri has made software-defined vehicle (SDV) capabilities a strategic priority. US HQ in Troy, MI. 342 manufacturing operations, 104 R&D centers, 28 countries. Key segments: Body & Chassis, Power & Vision, Seating, Complete Vehicles, ADAS/Autonomy, Electrification. Technology: SAP, AWS, Azure, Snowflake, AUTOSAR, ROS2. Key opportunity: ADAS software engineering, SDV platform development, digital manufacturing AI.' },
-  mercedes: { name: 'Mercedes-Benz Group AG', sector: 'Premium OEM', hq: 'Stuttgart, Germany', revenue: '$160B', employees: '~167,000', context: 'Mercedes-Benz Group AG (DAX: MBG) reported FY2024 revenue of approximately $160B (EUR 145.6B), down from $166B in 2023, primarily due to China volume decline and pricing pressure. R&D spend: $7.6B. Key strategic program: MB.OS, a proprietary vehicle operating system being built to consolidate all vehicle software. Technology: Microsoft Azure (primary), AWS, NVIDIA DRIVE, Qualcomm Snapdragon, Azure OpenAI for MBUX AI assistant. VP Digital & IT: Sabine Scheunert. Key opportunity: MB.OS software engineering, AI integration into MBUX, supply chain AI, digital manufacturing.' },
-  forvia: { name: 'Forvia SE', sector: 'Automotive Tier 1', hq: 'Nanterre, France / Auburn Hills, MI (NA)', revenue: '$29.8B', employees: '~150,000', context: 'Forvia SE (Euronext: FRVIA) was formed in 2022 through the merger of Faurecia and HELLA. FY2024 revenue: EUR 27B (~$29.8B). 150,000 employees, 290+ industrial sites, 76 R&D centers. North America HQ: Auburn Hills, Michigan with 43 sites and 7 R&D centers. CEO: Martin Fischer. Strategic platform: Appning (in-car connectivity). Segments: Seating, Interiors, Clean Mobility, Electronics, Lighting, Lifecycle Solutions. Active EU-FORWARD headcount reduction (10,000 over 5 years). Net debt EUR 6.6B. Key opportunity: Faurecia+HELLA integration data work, Appning platform software engineering, AI quality systems, manufacturing efficiency AI.' },
-  bosch: { name: 'Robert Bosch GmbH', sector: 'Technology & Automotive Supplier', hq: 'Gerlingen, Germany / Farmington Hills, MI (NA)', revenue: '$99.7B', employees: '~417,900', context: 'Bosch is the largest Tier 1 / technology supplier globally. FY2024 revenue: EUR 90.3B (~$99.7B). R&D: EUR 7.8B. 86,800 R&D associates. CEO: Stefan Hartung. Four sectors: Mobility (61%), Consumer Goods (22%), Energy & Building (9%), Industrial (8%). Key AI initiatives: Vehicle Motion Management AI, brake-by-wire systems, manufacturing AI, sensor fusion. Projects $6B+ in software and services revenue by early 2030s. North America HQ in Farmington Hills, MI. Technology: Azure, AWS, SAP, AUTOSAR, IoT platform (proprietary). Key opportunity: AI sensor integration, manufacturing AI/digital twin, software services growth support.' },
-  harman: { name: 'HARMAN International', sector: 'Connected Technology (Samsung subsidiary)', hq: 'Stamford, CT / Novi, MI (automotive)', revenue: '$11B (peak)', employees: '~30,000', context: 'HARMAN International is a wholly-owned Samsung subsidiary (acquired 2017 for $8B). Revenue grew to $11B under Michael Mauser. $45B automotive backlog in awarded business. New CEO: Christian Sobottka (April 2025, replaced Mauser). 30,000 employees. Key products: Digital cockpit, connected car systems, HARMAN Ignite (cloud platform), infotainment, audio (JBL, Harman Kardon, AKG). Technology: HARMAN Ignite, Samsung SmartThings, Android Automotive, QNX, OTA update systems. Active in generative AI for cockpit. Key opportunity: digital cockpit AI engineering, voice AI, connected car data platform, generative AI in-vehicle personalization. Samsung backing provides strong R&D investment capacity.' },
-  dms: { name: 'Detroit Manufacturing Systems (now Voltava)', sector: 'Automotive Tier 1 / Contract Manufacturing', hq: 'Detroit, Michigan', revenue: '~$600M+ (post-merger est.)', employees: '~2,500+', context: 'Detroit Manufacturing Systems (DMS) was founded in 2012 as a JV between Rush Group and Faurecia. In January 2026, DMS merged with Android Industries and Avancez to form Voltava, with $160M in senior secured financing. CEO Bruce Smith. Products: instrument panels, interior trim components, injection molding, value-add assembly. Key customers: Ford, Volvo. 88% minority workforce, 60%+ Detroit residents. Community-focused culture. Grid Dynamics has an existing Ford relationship that provides a warm reference into DMS. Also, DMS makes products for Volvo, and Grid Dynamics has a Nova Bus (Volvo subsidiary) relationship. Key opportunity: Voltava integration data/IT work, manufacturing analytics, Ford-adjacent positioning.' },
-  volvo: { name: 'Volvo Group (AB Volvo)', sector: 'OEM - Commercial Vehicles', hq: 'Gothenburg, Sweden', revenue: '$49.6B (FY2024)', employees: '~100,000', context: 'Volvo Group (Nasdaq Stockholm: VOLV) manufactures trucks, buses, and construction equipment. FY2024 revenue: SEK 526.8B (~$49.6B), down 4.4% as freight market normalized. CEO: Martin Lundstedt. Divisions: Volvo Trucks, Mack Trucks, Renault Trucks, Volvo Buses (includes Nova Bus), Volvo Construction Equipment, Volvo Financial Services. IMPORTANT: Grid Dynamics already has an active Nova Bus (a Volvo Group subsidiary) relationship - this is a direct, existing warm path into the broader Volvo Group account. Technology: Azure, AWS, Volvo Connect fleet platform, remote diagnostics, SAP, Dynafleet. Key opportunities: EV truck fleet analytics, autonomous trucking software, predictive maintenance AI, leveraging Nova Bus relationship to expand account.' },
-  rivian: { name: 'Rivian Automotive', sector: 'EV OEM', hq: 'Irvine, CA / Normal, IL (manufacturing)', revenue: '$4.97B (FY2024)', employees: '~14,000', context: 'Rivian (Nasdaq: RIVN) is a software-first EV startup. FY2024 revenue: $4.97B (+12% YoY). Net loss: -$4.75B (improving). CEO: RJ Scaringe (founder). Key partnerships: Amazon (commercial vans), Volkswagen JV ($1B+ convertible note, SDV platform licensing). Products: R1T truck, R1S SUV, commercial delivery van. Technology: Rivian OS (proprietary), AWS, Snowflake, NVIDIA DRIVE, OTA platform, zonal architecture. Key milestone: VW JV validates Rivian\'s SDV platform as licensable to other OEMs. Key opportunities: SDV platform engineering scale for VW licensing, fleet data analytics (Amazon contract), AI personalization, OTA update platform engineering. Grid Dynamics AI and cloud engineering expertise aligns with Rivian\'s software-first architecture.' },
-  rocket: { name: 'Rocket Companies', sector: 'Fintech Platform', hq: '1050 Woodward Ave, Detroit, MI', revenue: '$5.1B adj. revenue (FY2024)', employees: '~14,200', context: 'Rocket Companies (NYSE: RKT) is a Detroit-based fintech platform. FY2024 adjusted revenue: $4.9B (+30% YoY). CEO: Varun Krishna (AI-forward leader). Market cap: $46.3B. Brands: Rocket Mortgage, Rocket Homes, Rocket Money (4.1M premium members), Rocket Loans, Amrock Title. Key AI platforms: Rocket Logic (proprietary AI loan origination system - helped bankers serve 54% more clients in Q4 2024 YoY), Navigator (internal AI workflow platform, used by 1/3 of team members, 600+ custom apps built without code). In 2024, AI automation saved 1M+ hours and $40M in efficiency. CTO: Shrikant Malhotra (2024). Key opportunity: AI platform engineering augmentation, data science for underwriting, financial services AI use cases, local Detroit peer relationship.' },
-  uwm: { name: 'United Wholesale Mortgage (UWM)', sector: 'Mortgage / Fintech', hq: '585 South Blvd E, Pontiac, Michigan', revenue: '~$3.5B est.', employees: '5,000-10,000', context: 'UWM (NYSE: UWMC) is the #1 wholesale mortgage lender in the US for 5+ consecutive years. CEO: Mat Ishbia. Pontiac, Michigan campus with thousands of on-site employees. Proprietary technology platforms: Blink+ (broker origination platform), BOLT (closing technology), UClose (same-day closing). Key executives: Mat Ishbia (CEO), Alex Elezaj (CSO), Adam Wolfe (CLO), Sarah DeCiantis (CMO). Technology: proprietary platforms, IBM DataPower, Microsoft Power Apps, AI-driven broker solutions. UWM publicly emphasizes being a tech-forward, AI-driven company as a competitive differentiator for its broker network. Key opportunity: AI workflow engineering for broker platform enhancement, underwriting AI/data science, broker experience AI, local Pontiac/Detroit relationship. NOTE: UWM is intensely culture-focused and on-site only - local presence is non-negotiable for this account.' },
-  dte: { name: 'DTE Energy', sector: 'Utilities / Energy', hq: 'Detroit, Michigan', revenue: '$12.5B (FY2024)', employees: '~10,000', context: 'DTE Energy (NYSE: DTE) is a Fortune 500 diversified energy company based in Detroit. Serves Michigan for 100+ years. CEO: Jerry Norcia. President & COO DTE Electric: Matt Paul. Segments: DTE Electric (SE Michigan residential/commercial/industrial), DTE Gas, Power & Industrial, Renewable Energy, Energy Trading. Technology: IBM DataPower, Microsoft Power Apps, SAP, OGsys, Stata, SCADA systems. Strategic program: "Energy grid of the future" - active investment in smart grid, renewable energy integration, EV charging infrastructure. DTE powers virtually every automotive manufacturing plant in Michigan, making it infrastructure for the entire automotive ecosystem. Key opportunity: smart grid AI/predictive maintenance, outage prediction AI, renewable energy dispatch optimization, customer-facing energy management AI, EV charging optimization. Grid Dynamics Detroit presence and automotive ecosystem relationships are strong differentiators.' }
-};
-
-const GD_CONTEXT = `You are an account intelligence assistant for Grid Dynamics sales team. Grid Dynamics is a publicly traded enterprise AI and digital transformation consultancy. Key facts about Grid Dynamics: Founded 2006, HQ in Roseville CA, offices including Detroit MI. Dave Zabihaylo is Senior Director GTM Automotive based in Detroit, owns the Ford account, and is building the automotive go-to-market. Grid Dynamics has deep Google Cloud, AWS, Snowflake, and AI engineering expertise. Differentiation vs large Indian SIs (HCL, Cognizant, Infosys, Wipro): AI-native delivery, senior engineering talent, consultancy approach not body-shop, Google Cloud partnership. Answer concisely and with specific actionable sales intelligence. Do not use em dashes or double hyphens. Use bullet points only when listing multiple items.`;
-
+let accounts = [];
 let chatHistories = {};
-let currentAccount = 'mahle';
+let currentAccount = null;
+let editingAccountId = null;
+let removingAccountId = null;
 
-function showAccount(id, btn) {
-  document.querySelectorAll('.account-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-' + id).classList.add('active');
-  if (btn) btn.classList.add('active');
-  currentAccount = id;
-  if (!chatHistories[id]) { chatHistories[id] = []; initAIPanel(id); }
+// ---- XSS Protection (T-02-01, T-02-02) ----
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
+// ---- Data Loading ----
+async function loadAccounts() {
+  try {
+    const res = await fetch('/api/accounts');
+    accounts = await res.json();
+  } catch (e) {
+    accounts = [];
+  }
+  renderSidebar();
+  if (accounts.length > 0) {
+    showAccount(accounts[0].id);
+  } else {
+    renderEmptyState();
+  }
+  document.getElementById('acctCount').textContent = accounts.length + ' account' + (accounts.length !== 1 ? 's' : '');
+}
+
+// ---- Sidebar Rendering ----
+function renderSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  var groups = {};
+  accounts.forEach(function(a) {
+    if (!groups[a.sector]) groups[a.sector] = [];
+    groups[a.sector].push(a);
+  });
+  var html = '<div class="sidebar-items">';
+  var sectors = Object.keys(groups);
+  for (var i = 0; i < sectors.length; i++) {
+    var sector = sectors[i];
+    var items = groups[sector];
+    html += '<div class="sidebar-section">' + escapeHtml(sector) + '</div>';
+    for (var j = 0; j < items.length; j++) {
+      var a = items[j];
+      var shortName = getShortName(a.name);
+      html += '<button class="sidebar-item" onclick="showAccount(\'' + escapeHtml(a.id) + '\')" id="sb-' + escapeHtml(a.id) + '">';
+      html += '<span class="sidebar-dot" style="background:' + escapeHtml(a.dot_color || '#3B82F6') + '"></span>';
+      html += escapeHtml(shortName);
+      html += '<span class="sidebar-revenue">' + escapeHtml(a.display_revenue || '') + '</span>';
+      html += '</button>';
+    }
+  }
+  html += '</div>';
+  html += '<button class="sidebar-add" onclick="openAddModal()">+ Add Account</button>';
+  sidebar.innerHTML = html;
+}
+
+function getShortName(name) {
+  if (!name) return '';
+  // Remove common corporate suffixes for a cleaner sidebar label
+  return name
+    .replace(/\s+(Company|GmbH|International|SE|Group AG|Inc\.?|Corp\.?|LLC|Ltd\.?|Automotive|Holdings?)$/i, '')
+    .replace(/\s*\(.*?\)\s*$/, '')
+    .trim();
+}
+
+// ---- Account Panel Rendering ----
+function renderAccountPanel(account) {
+  var a = account;
+  var id = escapeHtml(a.id);
+  var name = escapeHtml(a.name);
+  var sector = escapeHtml(a.sector || '');
+  var hq = escapeHtml(a.hq || '');
+  var revenue = escapeHtml(a.revenue || '');
+  var employees = escapeHtml(a.employees || '');
+  var context = escapeHtml(a.context || '');
+
+  var html = '<div class="account-panel" id="panel-' + id + '">';
+  html += '<div class="acct-header">';
+  html += '<div class="acct-tag">Account Intelligence &middot; ' + sector + '</div>';
+  html += '<div style="display:flex;align-items:flex-start;gap:16px">';
+  html += '<div class="acct-name"><strong>' + name + '</strong></div>';
+  html += '<div class="acct-actions">';
+  html += '<button class="acct-action-btn" onclick="openEditModal(\'' + id + '\')">Edit Account</button>';
+  html += '<button class="acct-action-btn del" onclick="openRemoveModal(\'' + id + '\')">Remove Account</button>';
+  html += '</div>';
+  html += '</div>';
+  html += '<div class="acct-sub">' + hq + '</div>';
+  html += '<div class="acct-kpis">';
+  html += '<div><div class="kpi-val">' + revenue + '</div><div class="kpi-label">Revenue</div></div>';
+  html += '<div><div class="kpi-val">' + employees + '</div><div class="kpi-label">Employees</div></div>';
+  html += '</div>';
+  html += '</div>';
+
+  html += '<div class="acct-tabs">';
+  html += '<button class="acct-tab active" onclick="showTab(\'' + id + '\',\'overview\',this)">Overview</button>';
+  html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'ai\',this)">Ask AI</button>';
+  html += '</div>';
+
+  html += '<div class="acct-content">';
+  // Overview tab
+  html += '<div class="tab-pane active" id="' + id + '-overview">';
+  html += '<div class="hl"><div class="hl-label">Account Intelligence</div>' + context.replace(/\n/g, '<br>') + '</div>';
+  html += '</div>';
+  // AI tab
+  html += '<div class="tab-pane" id="' + id + '-ai"><div id="' + id + '-ai-panel"></div></div>';
+  html += '</div>';
+
+  html += '</div>';
+
+  var mainContent = document.getElementById('mainContent');
+  var temp = document.createElement('div');
+  temp.innerHTML = html;
+  mainContent.appendChild(temp.firstChild);
+}
+
+// ---- Show Account ----
+function showAccount(id) {
+  document.querySelectorAll('.account-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.sidebar-item').forEach(function(b) { b.classList.remove('active'); });
+
+  // Render panel if it doesn't exist yet
+  if (!document.getElementById('panel-' + id)) {
+    var acct = accounts.find(function(a) { return a.id === id; });
+    if (acct) renderAccountPanel(acct);
+  }
+
+  var panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+
+  var sbItem = document.getElementById('sb-' + id);
+  if (sbItem) sbItem.classList.add('active');
+
+  currentAccount = id;
+
+  // Init AI panel if needed
+  if (!chatHistories[id]) {
+    chatHistories[id] = [];
+    initAIPanel(id);
+  }
+}
+
+// ---- Show Tab ----
 function showTab(account, tab, btn) {
-  const panel = document.getElementById('panel-' + account);
-  panel.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  panel.querySelectorAll('.acct-tab').forEach(b => b.classList.remove('active'));
-  const pane = document.getElementById(account + '-' + tab);
+  var panel = document.getElementById('panel-' + account);
+  if (!panel) return;
+  panel.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+  panel.querySelectorAll('.acct-tab').forEach(function(b) { b.classList.remove('active'); });
+  var pane = document.getElementById(account + '-' + tab);
   if (pane) pane.classList.add('active');
   if (btn) btn.classList.add('active');
-  if (tab === 'ai' && !chatHistories[account]) { chatHistories[account] = []; initAIPanel(account); }
+  if (tab === 'ai' && !chatHistories[account]) {
+    chatHistories[account] = [];
+    initAIPanel(account);
+  }
 }
 
+// ---- AI Panel ----
 function initAIPanel(id) {
-  const container = document.getElementById(id + '-ai-panel');
+  var container = document.getElementById(id + '-ai-panel');
   if (!container || container.innerHTML !== '') return;
-  const acct = ACCOUNTS[id];
-  container.innerHTML = `
-    <div class="ai-panel">
-      <div class="ai-hdr"><div class="ai-dot"></div><div class="ai-hdr-txt">Account AI &mdash; ${acct.name}</div><div class="ai-hdr-sub">Claude &middot; GD context loaded</div></div>
-      <div class="ai-msgs" id="msgs-${id}">
-        <div class="msg ai"><div class="msg-av ai">AI</div><div class="msg-bub">I have the full ${acct.name} account profile loaded. What would you like to know for your pursuit strategy?</div></div>
-      </div>
-      <div class="ai-chips" id="chips-${id}">
-        <button class="chip" onclick="sendChip('${id}',this)">Where does GD start here?</button>
-        <button class="chip" onclick="sendChip('${id}',this)">Who should we contact first?</button>
-        <button class="chip" onclick="sendChip('${id}',this)">What is the best differentiator vs large SIs?</button>
-        <button class="chip" onclick="sendChip('${id}',this)">Draft an opening outreach email</button>
-      </div>
-      <div class="ai-inp-area">
-        <input class="ai-inp" id="inp-${id}" type="text" placeholder="Ask about ${acct.name}..." onkeydown="if(event.key==='Enter') sendMsg('${id}')" />
-        <button class="ai-send" onclick="sendMsg('${id}')" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
-      </div>
-    </div>`;
+  var acct = accounts.find(function(a) { return a.id === id; });
+  if (!acct) return;
+  var safeName = escapeHtml(acct.name);
+  var safeId = escapeHtml(id);
+  container.innerHTML =
+    '<div class="ai-panel">' +
+      '<div class="ai-hdr"><div class="ai-dot"></div><div class="ai-hdr-txt">Account AI &mdash; ' + safeName + '</div><div class="ai-hdr-sub">Claude &middot; GD context loaded</div></div>' +
+      '<div class="ai-msgs" id="msgs-' + safeId + '">' +
+        '<div class="msg ai"><div class="msg-av ai">AI</div><div class="msg-bub">Ask anything about ' + safeName + '.</div></div>' +
+      '</div>' +
+      '<div class="ai-chips" id="chips-' + safeId + '">' +
+        '<button class="chip" onclick="sendChip(\'' + safeId + '\',this)">Where does GD start here?</button>' +
+        '<button class="chip" onclick="sendChip(\'' + safeId + '\',this)">Who should we contact first?</button>' +
+        '<button class="chip" onclick="sendChip(\'' + safeId + '\',this)">What is the best differentiator vs large SIs?</button>' +
+        '<button class="chip" onclick="sendChip(\'' + safeId + '\',this)">Draft an opening outreach email</button>' +
+      '</div>' +
+      '<div class="ai-inp-area">' +
+        '<input class="ai-inp" id="inp-' + safeId + '" type="text" placeholder="Ask about ' + safeName + '..." onkeydown="if(event.key===\'Enter\') sendMsg(\'' + safeId + '\')" />' +
+        '<button class="ai-send" onclick="sendMsg(\'' + safeId + '\')" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>' +
+      '</div>' +
+    '</div>';
 }
 
 function sendChip(id, btn) {
@@ -1146,31 +685,33 @@ function sendChip(id, btn) {
 }
 
 async function sendMsg(id) {
-  const inp = document.getElementById('inp-' + id);
-  const text = inp.value.trim();
+  var inp = document.getElementById('inp-' + id);
+  var text = inp.value.trim();
   if (!text) return;
   inp.value = '';
-  document.getElementById('chips-' + id).style.display = 'none';
+  var chipsEl = document.getElementById('chips-' + id);
+  if (chipsEl) chipsEl.style.display = 'none';
   addMsg(id, 'user', text);
   if (!chatHistories[id]) chatHistories[id] = [];
   chatHistories[id].push({ role: 'user', content: text });
-  const typingId = addTyping(id);
-  const acct = ACCOUNTS[id];
-  const sysPrompt = GD_CONTEXT + '\n\nACCOUNT: ' + acct.name + '\nSECTOR: ' + acct.sector + '\nHQ: ' + acct.hq + '\nREVENUE: ' + acct.revenue + '\nEMPLOYEES: ' + acct.employees + '\n\nACCOUNT INTELLIGENCE:\n' + acct.context;
+  var typingId = addTyping(id);
 
   try {
-    const messages = chatHistories[id].map((m, i) => {
-      if (i === 0) return { role: m.role, content: sysPrompt + '\n\nQuestion: ' + m.content };
-      return m;
-    });
-    const res = await fetch('/api/claude', {
+    var messages = chatHistories[id].map(function(m) { return { role: m.role, content: m.content }; });
+    var res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: 'You are an account intelligence assistant for Grid Dynamics. Be direct, specific, and actionable. No em dashes or double hyphens.', messages })
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: 'You are an account intelligence assistant for Grid Dynamics. Be direct, specific, and actionable. No em dashes or double hyphens.',
+        messages: messages,
+        account_id: id
+      })
     });
-    const data = await res.json();
+    var data = await res.json();
     removeTyping(id, typingId);
-    const reply = data.content && data.content[0] ? data.content[0].text : 'Unable to get a response. Please try again.';
+    var reply = data.content && data.content[0] ? data.content[0].text : 'Unable to get a response. Please try again.';
     chatHistories[id].push({ role: 'assistant', content: reply });
     addMsg(id, 'ai', reply);
   } catch(e) {
@@ -1180,47 +721,210 @@ async function sendMsg(id) {
 }
 
 function addMsg(id, role, text) {
-  const msgs = document.getElementById('msgs-' + id);
-  const div = document.createElement('div');
+  var msgs = document.getElementById('msgs-' + id);
+  if (!msgs) return;
+  var div = document.createElement('div');
   div.className = 'msg ' + role;
-  const av = role === 'ai' ? 'AI' : 'DZ';
-  const fmt = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
-  div.innerHTML = `<div class="msg-av ${role}">${av}</div><div class="msg-bub">${fmt}</div>`;
+  var av = role === 'ai' ? 'AI' : 'DZ';
+  var fmt = escapeHtml(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+  div.innerHTML = '<div class="msg-av ' + role + '">' + av + '</div><div class="msg-bub">' + fmt + '</div>';
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
 
 function addTyping(id) {
-  const msgs = document.getElementById('msgs-' + id);
-  const tid = 'typing-' + id + '-' + Date.now();
-  const div = document.createElement('div');
+  var msgs = document.getElementById('msgs-' + id);
+  var tid = 'typing-' + id + '-' + Date.now();
+  var div = document.createElement('div');
   div.className = 'msg ai';
   div.id = tid;
-  div.innerHTML = `<div class="msg-av ai">AI</div><div class="msg-bub"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  div.innerHTML = '<div class="msg-av ai">AI</div><div class="msg-bub"><div class="typing"><span></span><span></span><span></span></div></div>';
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
   return tid;
 }
 
 function removeTyping(id, tid) {
-  const el = document.getElementById(tid);
+  var el = document.getElementById(tid);
   if (el) el.remove();
 }
 
+// ---- Search / Filter ----
 function filterAccounts(query) {
-  const q = query.toLowerCase();
-  const items = document.querySelectorAll('.sidebar-item');
-  let visible = 0;
-  items.forEach(item => {
-    const matches = item.textContent.toLowerCase().includes(q);
+  var q = query.toLowerCase();
+  var items = document.querySelectorAll('.sidebar-item');
+  var visible = 0;
+  items.forEach(function(item) {
+    var matches = item.textContent.toLowerCase().includes(q);
     item.style.display = matches ? '' : 'none';
     if (matches) visible++;
   });
   document.getElementById('acctCount').textContent = visible + ' account' + (visible !== 1 ? 's' : '');
 }
 
-// Init first panel AI
-initAIPanel('mahle');
+// ---- Empty State ----
+function renderEmptyState() {
+  document.getElementById('mainContent').innerHTML = '<div class="empty-state"><h3>No accounts yet</h3><p>Add your first account to start tracking prospects.</p></div>';
+}
+
+// ---- Modal: Add Account ----
+function openAddModal() {
+  editingAccountId = null;
+  document.getElementById('modalTitle').textContent = 'Add Account';
+  document.getElementById('modalSaveBtn').textContent = 'Save Account';
+  document.getElementById('modalAccountId').value = '';
+  document.getElementById('modalName').value = '';
+  document.getElementById('modalSector').value = '';
+  document.getElementById('modalRevenue').value = '';
+  document.getElementById('modalEmployees').value = '';
+  document.getElementById('modalHQ').value = '';
+  document.getElementById('modalContext').value = '';
+  hideModalError();
+  document.getElementById('accountModal').classList.add('show');
+}
+
+// ---- Modal: Edit Account ----
+function openEditModal(id) {
+  var acct = accounts.find(function(a) { return a.id === id; });
+  if (!acct) return;
+  editingAccountId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Account';
+  document.getElementById('modalSaveBtn').textContent = 'Save Changes';
+  document.getElementById('modalAccountId').value = id;
+  document.getElementById('modalName').value = acct.name || '';
+  document.getElementById('modalSector').value = acct.sector || '';
+  document.getElementById('modalRevenue').value = acct.revenue || '';
+  document.getElementById('modalEmployees').value = acct.employees || '';
+  document.getElementById('modalHQ').value = acct.hq || '';
+  document.getElementById('modalContext').value = acct.context || '';
+  hideModalError();
+  document.getElementById('accountModal').classList.add('show');
+}
+
+// ---- Modal: Close ----
+function closeModal() {
+  document.getElementById('accountModal').classList.remove('show');
+  editingAccountId = null;
+  hideModalError();
+}
+
+function hideModalError() {
+  var err = document.getElementById('modalError');
+  err.textContent = '';
+  err.classList.remove('show');
+}
+
+function showModalError(msg) {
+  var err = document.getElementById('modalError');
+  err.textContent = msg;
+  err.classList.add('show');
+}
+
+// ---- Modal: Save Account ----
+async function saveAccount() {
+  var name = document.getElementById('modalName').value.trim();
+  if (!name) {
+    showModalError('Company name is required.');
+    return;
+  }
+
+  var btn = document.getElementById('modalSaveBtn');
+  var originalText = btn.textContent;
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+  hideModalError();
+
+  var payload = {
+    name: name,
+    sector: document.getElementById('modalSector').value.trim(),
+    revenue: document.getElementById('modalRevenue').value.trim(),
+    employees: document.getElementById('modalEmployees').value.trim(),
+    hq: document.getElementById('modalHQ').value.trim(),
+    context: document.getElementById('modalContext').value.trim()
+  };
+
+  try {
+    var url, method;
+    if (editingAccountId) {
+      url = '/api/accounts/' + editingAccountId;
+      method = 'PUT';
+    } else {
+      url = '/api/accounts';
+      method = 'POST';
+    }
+
+    var res = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      throw new Error('Server error');
+    }
+
+    var saved = await res.json();
+    closeModal();
+
+    // Clear rendered panels so they re-render with fresh data
+    document.getElementById('mainContent').innerHTML = '';
+
+    await loadAccounts();
+
+    // Select the saved account
+    showAccount(saved.id);
+  } catch (e) {
+    showModalError("Couldn't save. Check your connection and try again.");
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+// ---- Modal: Remove Account ----
+function openRemoveModal(id) {
+  var acct = accounts.find(function(a) { return a.id === id; });
+  if (!acct) return;
+  removingAccountId = id;
+  document.getElementById('removeMsg').textContent = acct.name + ' and its chat history will be hidden. You can restore it later.';
+  document.getElementById('removeModal').classList.add('show');
+}
+
+function closeRemoveModal() {
+  document.getElementById('removeModal').classList.remove('show');
+  removingAccountId = null;
+}
+
+async function confirmRemove() {
+  if (!removingAccountId) return;
+
+  var btn = document.getElementById('removeConfirmBtn');
+  btn.textContent = 'Removing...';
+  btn.disabled = true;
+
+  try {
+    var res = await fetch('/api/accounts/' + removingAccountId, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Delete failed');
+    closeRemoveModal();
+
+    // Remove panel from DOM
+    var panel = document.getElementById('panel-' + removingAccountId);
+    if (panel) panel.remove();
+
+    // Clear chat history for removed account
+    delete chatHistories[removingAccountId];
+
+    await loadAccounts();
+  } catch (e) {
+    closeRemoveModal();
+  } finally {
+    btn.textContent = 'Remove Account';
+    btn.disabled = false;
+  }
+}
+
+// ---- Init ----
+loadAccounts();
 </script>
 </body>
 </html>
