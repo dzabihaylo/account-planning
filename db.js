@@ -15,6 +15,7 @@ if (process.env.DATABASE_PATH) {
 
 const db = new Database(dbPath);
 db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
 
 // Schema migration using PRAGMA user_version
 const version = db.pragma('user_version', { simple: true });
