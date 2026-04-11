@@ -34,9 +34,9 @@
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Database foundation: SQLite schema, better-sqlite3 setup, REST API, seed 13 accounts
-- [ ] 01-02-PLAN.md — Dynamic frontend: rewrite index.html to render from API, add/edit/remove modals
-- [ ] 01-03-PLAN.md — Chat persistence: save and restore chat history across page reloads
+- [x] 01-01-PLAN.md — Database foundation: SQLite schema, better-sqlite3 setup, REST API, seed 13 accounts
+- [x] 01-02-PLAN.md — Dynamic frontend: rewrite index.html to render from API, add/edit/remove modals
+- [x] 01-03-PLAN.md — Chat persistence: save and restore chat history across page reloads
 
 **UI hint**: yes
 
