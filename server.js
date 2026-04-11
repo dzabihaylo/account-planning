@@ -3,10 +3,13 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
+const db = require('./db');
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 const PORT = process.env.PORT || 3000;
+
+const GD_CONTEXT = 'You are an account intelligence assistant for Grid Dynamics sales team. Grid Dynamics is a publicly traded enterprise AI and digital transformation consultancy. Key facts about Grid Dynamics: Founded 2006, HQ in Roseville CA, offices including Detroit MI. Dave Zabihaylo is Senior Director GTM Automotive based in Detroit, owns the Ford account, and is building the automotive go-to-market. Grid Dynamics has deep Google Cloud, AWS, Snowflake, and AI engineering expertise. Differentiation vs large Indian SIs (HCL, Cognizant, Infosys, Wipro): AI-native delivery, senior engineering talent, consultancy approach not body-shop, Google Cloud partnership. Answer concisely and with specific actionable sales intelligence. Do not use em dashes or double hyphens. Use bullet points only when listing multiple items.';
 
 if (!API_KEY) {
   console.error('ERROR: ANTHROPIC_API_KEY environment variable is not set.');
@@ -75,7 +78,7 @@ const server = http.createServer((req, res) => {
   const parsed = url.parse(req.url);
 
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
@@ -112,6 +115,99 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Account API routes
+  const accountMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)$/);
+
+  // GET /api/accounts - list all active accounts
+  if (req.method === 'GET' && parsed.pathname === '/api/accounts') {
+    const accounts = db.getAccounts();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(accounts));
+    return;
+  }
+
+  // GET /api/accounts/:id - get single account
+  if (req.method === 'GET' && accountMatch) {
+    const account = db.getAccount(accountMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(account));
+    return;
+  }
+
+  // POST /api/accounts - create new account
+  if (req.method === 'POST' && parsed.pathname === '/api/accounts') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Name is required' }));
+          return;
+        }
+        const account = db.createAccount(data);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(account));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+
+  // PUT /api/accounts/:id - update account
+  if (req.method === 'PUT' && accountMatch) {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const account = db.updateAccount(accountMatch[1], data);
+        if (!account) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Account not found' }));
+          return;
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(account));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      }
+    });
+    return;
+  }
+
+  // DELETE /api/accounts/:id - soft delete account
+  if (req.method === 'DELETE' && accountMatch) {
+    // Validate id format
+    if (!/^[a-z0-9-]+$/.test(accountMatch[1])) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid account ID' }));
+      return;
+    }
+    const result = db.deleteAccount(accountMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  // POST /api/accounts/:id/restore - restore soft-deleted account
+  const restoreMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/restore$/);
+  if (req.method === 'POST' && restoreMatch) {
+    const account = db.restoreAccount(restoreMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(account));
+    return;
+  }
+
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
     let body = '';
@@ -124,6 +220,16 @@ const server = http.createServer((req, res) => {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
         return;
+      }
+
+      // If account_id is provided, build system prompt from DB
+      if (parsed_body.account_id) {
+        const acct = db.getAccount(parsed_body.account_id);
+        if (acct) {
+          const sysPrompt = GD_CONTEXT + '\n\nACCOUNT: ' + acct.name + '\nSECTOR: ' + acct.sector + '\nHQ: ' + acct.hq + '\nREVENUE: ' + acct.revenue + '\nEMPLOYEES: ' + acct.employees + '\n\nACCOUNT INTELLIGENCE:\n' + acct.context;
+          parsed_body.system = sysPrompt;
+        }
+        delete parsed_body.account_id;
       }
 
       const payload = JSON.stringify(parsed_body);
