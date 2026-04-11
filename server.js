@@ -94,9 +94,8 @@ function readBody(req, res, callback) {
 const server = http.createServer((req, res) => {
   const parsed = url.parse(req.url);
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // CORS: Only allow same-origin requests (SPA served from same origin).
+  // No Access-Control-Allow-Origin header needed for same-origin.
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
