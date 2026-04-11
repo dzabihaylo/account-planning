@@ -247,6 +247,11 @@ const server = http.createServer((req, res) => {
       return;
     }
     const result = db.deleteAccount(accountMatch[1]);
+    if (!result) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(result));
     return;

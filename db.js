@@ -282,7 +282,8 @@ function updateAccount(id, fields) {
 }
 
 function deleteAccount(id) {
-  db.prepare("UPDATE accounts SET is_deleted = 1, updated_at = datetime('now') WHERE id = ?").run(id);
+  const result = db.prepare("UPDATE accounts SET is_deleted = 1, updated_at = datetime('now') WHERE id = ? AND is_deleted = 0").run(id);
+  if (result.changes === 0) return null;
   return { success: true };
 }
 
