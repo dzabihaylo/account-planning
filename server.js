@@ -239,13 +239,8 @@ const server = http.createServer((req, res) => {
   }
 
   // DELETE /api/accounts/:id - soft delete account
+  // ID format already validated by route regex /^\/api\/accounts\/([a-z0-9-]+)$/
   if (req.method === 'DELETE' && accountMatch) {
-    // Validate id format
-    if (!/^[a-z0-9-]+$/.test(accountMatch[1])) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Invalid account ID' }));
-      return;
-    }
     const result = db.deleteAccount(accountMatch[1]);
     if (!result) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
