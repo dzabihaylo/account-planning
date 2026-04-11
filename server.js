@@ -115,6 +115,51 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Chat API routes (must match before generic /api/accounts/:id)
+  const chatMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/chat$/);
+
+  // GET /api/accounts/:id/chat - get chat history
+  if (req.method === 'GET' && chatMatch) {
+    const messages = db.getChatMessages(chatMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(messages));
+    return;
+  }
+
+  // POST /api/accounts/:id/chat - save a chat message
+  if (req.method === 'POST' && chatMatch) {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      const { role, content } = parsed_body;
+      if (!role || !content || !['user', 'assistant'].includes(role)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'role (user|assistant) and content are required' }));
+        return;
+      }
+      const msg = db.addChatMessage(chatMatch[1], role, content);
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(msg));
+    });
+    return;
+  }
+
+  // DELETE /api/accounts/:id/chat - clear chat history
+  if (req.method === 'DELETE' && chatMatch) {
+    db.clearChatMessages(chatMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true }));
+    return;
+  }
+
   // Account API routes
   const accountMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)$/);
 

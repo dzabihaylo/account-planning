@@ -292,7 +292,7 @@ function restoreAccount(id) {
 }
 
 function getChatMessages(accountId) {
-  return db.prepare('SELECT * FROM chat_messages WHERE account_id = ? ORDER BY created_at ASC').all(accountId);
+  return db.prepare('SELECT * FROM chat_messages WHERE account_id = ? ORDER BY created_at ASC LIMIT 100').all(accountId);
 }
 
 function addChatMessage(accountId, role, content) {
