@@ -261,6 +261,11 @@ const server = http.createServer((req, res) => {
   const restoreMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/restore$/);
   if (req.method === 'POST' && restoreMatch) {
     const account = db.restoreAccount(restoreMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(account));
     return;
