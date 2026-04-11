@@ -597,7 +597,8 @@ function renderAccountPanel(account) {
   html += '<div class="acct-content">';
   // Overview tab
   html += '<div class="tab-pane active" id="' + id + '-overview">';
-  html += '<div class="hl"><div class="hl-label">Account Intelligence</div>' + context.replace(/\n/g, '<br>') + '</div>';
+  // SECURITY: escapeHtml MUST run before any .replace() that injects HTML tags.
+  html += '<div class="hl"><div class="hl-label">Account Intelligence</div>' + escapeHtml(context).replace(/\n/g, '<br>') + '</div>';
   html += '</div>';
   // AI tab
   html += '<div class="tab-pane" id="' + id + '-ai"><div id="' + id + '-ai-panel"></div></div>';
@@ -759,6 +760,8 @@ function addMsg(id, role, text) {
   var div = document.createElement('div');
   div.className = 'msg ' + role;
   var av = role === 'ai' ? 'AI' : 'DZ';
+  // SECURITY: escapeHtml MUST run before any .replace() that injects HTML tags.
+  // The captured groups contain already-escaped text, so this is safe.
   var fmt = escapeHtml(text).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
   div.innerHTML = '<div class="msg-av ' + role + '">' + av + '</div><div class="msg-bub">' + fmt + '</div>';
   msgs.appendChild(div);
