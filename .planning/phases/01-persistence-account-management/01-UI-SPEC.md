@@ -42,26 +42,28 @@ Declared values (must be multiples of 4):
 | 2xl | 48px | Modal vertical centering offset |
 | 3xl | 64px | Not used in Phase 1 |
 
-Exceptions: Sidebar item touch target uses 10px vertical padding (existing pattern — do not change). Sidebar header section labels use 12px horizontal padding (existing pattern — do not change).
+**Legacy note:** Sidebar item vertical padding is 10px — a pre-existing value in the codebase. Phase 1 does not introduce this value and does not change it. It is not part of this phase's spacing contract.
 
 ---
 
 ## Typography
 
-All sizes are from the existing type scale detected in `index.html`. No new sizes are introduced in Phase 1.
+All sizes are from the existing type scale detected in `index.html`. No new sizes are introduced in Phase 1. Modal titles use the existing 20px section heading size.
 
 | Role | Size | Weight | Line Height | Font |
 |------|------|--------|-------------|------|
-| Body / form input | 13px | 400 | 1.5 | DM Sans |
 | Label / helper text | 11px | 500 | 1.4 | DM Sans |
-| Section heading | 20px | 500 | 1.2 | DM Sans |
-| Display / account name | 28px | 300 | 1.15 | DM Sans |
+| Body / form input | 13px | 400 | 1.5 | DM Sans |
+| Section heading / modal title | 20px | 500 | 1.2 | DM Sans |
+| Display / account name | 28px | 400 | 1.15 | DM Sans |
 
-Modal-specific additions (new in Phase 1):
+**Weight contract:** Only two weights — 400 (regular) and 500 (medium). Weight 300 (light) is not used in Phase 1.
+
+Modal-specific type assignments (drawn from the 4-size scale above):
 
 | Element | Size | Weight | Font |
 |---------|------|--------|------|
-| Modal title | 16px | 500 | DM Sans |
+| Modal title | 20px | 500 | DM Sans |
 | Form field label | 11px | 500 | DM Sans |
 | Form input text | 13px | 400 | DM Sans |
 | Form helper / error | 11px | 400 | DM Sans |
@@ -99,6 +101,8 @@ Status colors:
 
 Muted text (`--muted: #7C8DB5`) for: all secondary labels, placeholder text, helper text, sidebar section headers, revenue figures.
 
+**Focal point:** The active account name in `.acct-header` at 28px / 400 weight on `--dark` background is the primary visual anchor. All other elements defer to it in hierarchy.
+
 ---
 
 ## Component Patterns
@@ -120,7 +124,7 @@ No modal pattern exists in the current codebase. Establish the pattern here for 
 
 **Behavior:**
 - Opens via "Add Account" button click or edit icon click on account header
-- Closes via Cancel button, X icon, or clicking the overlay (not keyboard Escape — not in scope, inline onclick pattern)
+- Closes via Discard Changes button, X icon, or clicking the overlay (not keyboard Escape — not in scope, inline onclick pattern)
 - Overlay click calls `closeModal()` via `onclick` on `.modal-overlay`
 - Stop propagation on `.modal` via `onclick="event.stopPropagation()"`
 
@@ -150,7 +154,7 @@ Three variants needed. Extend `.ai-send` pattern for primary; define secondary a
 | Variant | Background | Border | Text color | Use |
 |---------|-----------|--------|------------|-----|
 | Primary | `var(--accent)` | none | `#fff` | Save, Add Account |
-| Secondary | `transparent` | `var(--border2)` | `var(--muted)` | Cancel |
+| Secondary | `transparent` | `var(--border2)` | `var(--muted)` | Discard Changes |
 | Destructive | `transparent` | `rgba(239,68,68,0.3)` | `var(--red)` | Remove Account |
 
 All buttons: `border-radius: 6px`, `padding: 7px 16px`, `font-size: 13px`, `font-family: var(--font)`, `cursor: pointer`.
@@ -181,7 +185,7 @@ Placement: Revealed on `.acct-header` hover via sibling CSS or JS class toggle. 
 .acct-action-btn.del:hover — border-color: rgba(239,68,68,0.3), color: var(--red)
 ```
 
-Labels: `Edit` / `Remove`
+Labels: `Edit` / `Remove Account`
 
 ---
 
@@ -194,8 +198,8 @@ Labels: `Edit` / `Remove`
 | Primary CTA — save edit | `Save Changes` |
 | Modal title — add | `Add Account` |
 | Modal title — edit | `Edit Account` |
-| Cancel button | `Cancel` |
-| Remove button (header) | `Remove` |
+| Discard / cancel button | `Discard Changes` |
+| Remove button (header) | `Remove Account` |
 | Sidebar trigger | `+ Add Account` |
 | Empty state heading | `No accounts yet` |
 | Empty state body | `Add your first account to start tracking prospects.` |
@@ -222,10 +226,10 @@ The `.acct-header` displays KPIs and account identity. In Phase 1, it gains Edit
 
 | State | Behavior |
 |-------|---------|
-| Default | Header shows account name, sector tag, KPI row. Edit/Remove buttons visible at small opacity (0.4) or hidden until hover. |
-| Hover | Edit and Remove buttons appear at full opacity. |
+| Default | Header shows account name, sector tag, KPI row. Edit/Remove Account buttons visible at small opacity (0.4) or hidden until hover. |
+| Hover | Edit and Remove Account buttons appear at full opacity. |
 | Edit click | Opens pre-filled modal with current account data. |
-| Remove click | Opens a secondary confirmation modal (not inline — separate modal to prevent accidental deletion). |
+| Remove Account click | Opens a secondary confirmation modal (not inline — separate modal to prevent accidental deletion). |
 
 ### Modal
 
@@ -290,3 +294,4 @@ No external component registries. All UI is hand-authored vanilla CSS/JS extendi
 
 *Phase: 01-persistence-account-management*
 *UI-SPEC created: 2026-04-10*
+*UI-SPEC revised: 2026-04-10 — checker revision applied*
