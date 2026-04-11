@@ -74,6 +74,23 @@ const LOGIN_PAGE = `<!DOCTYPE html>
 
 const LOGIN_ERROR_PAGE = LOGIN_PAGE.replace('<form method="POST"', '<p style="font-size:12px;color:#EF4444;margin-bottom:12px">Incorrect password.</p><form method="POST"');
 
+const MAX_BODY = 1024 * 1024; // 1 MB
+
+function readBody(req, res, callback) {
+  let body = '';
+  req.on('data', chunk => {
+    body += chunk;
+    if (body.length > MAX_BODY) {
+      res.writeHead(413, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request body too large' }));
+      req.destroy();
+    }
+  });
+  req.on('end', () => {
+    if (!req.destroyed) callback(body);
+  });
+}
+
 const server = http.createServer((req, res) => {
   const parsed = url.parse(req.url);
 
@@ -89,9 +106,7 @@ const server = http.createServer((req, res) => {
 
   // Login form submission
   if (req.method === 'POST' && parsed.pathname === '/login') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    readBody(req, res, (body) => {
       const params = new URLSearchParams(body);
       const submitted = params.get('password');
       if (submitted === APP_PASSWORD) {
@@ -128,9 +143,7 @@ const server = http.createServer((req, res) => {
 
   // POST /api/accounts/:id/chat - save a chat message
   if (req.method === 'POST' && chatMatch) {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    readBody(req, res, (body) => {
       let parsed_body;
       try {
         parsed_body = JSON.parse(body);
@@ -186,9 +199,7 @@ const server = http.createServer((req, res) => {
 
   // POST /api/accounts - create new account
   if (req.method === 'POST' && parsed.pathname === '/api/accounts') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    readBody(req, res, (body) => {
       try {
         const data = JSON.parse(body);
         if (!data.name || typeof data.name !== 'string' || !data.name.trim()) {
@@ -209,9 +220,7 @@ const server = http.createServer((req, res) => {
 
   // PUT /api/accounts/:id - update account
   if (req.method === 'PUT' && accountMatch) {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    readBody(req, res, (body) => {
       try {
         const data = JSON.parse(body);
         const account = db.updateAccount(accountMatch[1], data);
@@ -255,9 +264,7 @@ const server = http.createServer((req, res) => {
 
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
-    let body = '';
-    req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    readBody(req, res, (body) => {
       let parsed_body;
       try {
         parsed_body = JSON.parse(body);
