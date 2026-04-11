@@ -165,7 +165,7 @@ Hover states: Primary darkens to `#2563EB`; Secondary background becomes `rgba(2
 Placement: Bottom of sidebar, below the last sidebar section. Always visible, sticky.
 
 ```
-.sidebar-add    — display: flex, align-items: center, gap: 8px, padding: 10px 16px,
+.sidebar-add    — display: flex, align-items: center, gap: 8px, padding: 8px 16px,
                   margin-top: auto, border-top: 1px solid var(--border),
                   font-size: 13px, color: var(--muted), cursor: pointer, background: none
 .sidebar-add:hover — color: var(--text), background: rgba(255,255,255,0.03)
@@ -185,7 +185,7 @@ Placement: Revealed on `.acct-header` hover via sibling CSS or JS class toggle. 
 .acct-action-btn.del:hover — border-color: rgba(239,68,68,0.3), color: var(--red)
 ```
 
-Labels: `Edit` / `Remove Account`
+Labels: `Edit Account` / `Remove Account`
 
 ---
 
