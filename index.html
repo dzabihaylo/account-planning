@@ -677,6 +677,37 @@ function initAIPanel(id) {
         '<button class="ai-send" onclick="sendMsg(\'' + safeId + '\')" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>' +
       '</div>' +
     '</div>';
+  loadChatHistory(id);
+}
+
+async function loadChatHistory(id) {
+  try {
+    var res = await fetch('/api/accounts/' + id + '/chat');
+    var messages = await res.json();
+    if (messages.length === 0) return;
+    // Populate in-memory chatHistories from DB
+    chatHistories[id] = messages.map(function(m) { return { role: m.role, content: m.content }; });
+    // Clear the default welcome message and render saved messages
+    var msgsContainer = document.getElementById('msgs-' + id);
+    if (!msgsContainer) return;
+    msgsContainer.innerHTML = '';
+    messages.forEach(function(m) {
+      addMsg(id, m.role === 'user' ? 'user' : 'ai', m.content);
+    });
+    // Hide chips if there is existing history
+    var chips = document.getElementById('chips-' + id);
+    if (chips) chips.style.display = 'none';
+  } catch (e) {
+    console.error('Failed to load chat history:', e);
+  }
+}
+
+function saveChatMessage(accountId, role, content) {
+  fetch('/api/accounts/' + accountId + '/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: role, content: content })
+  }).catch(function(e) { console.error('Failed to save chat message:', e); });
 }
 
 function sendChip(id, btn) {
@@ -694,6 +725,7 @@ async function sendMsg(id) {
   addMsg(id, 'user', text);
   if (!chatHistories[id]) chatHistories[id] = [];
   chatHistories[id].push({ role: 'user', content: text });
+  saveChatMessage(id, 'user', text);
   var typingId = addTyping(id);
 
   try {
@@ -713,6 +745,7 @@ async function sendMsg(id) {
     removeTyping(id, typingId);
     var reply = data.content && data.content[0] ? data.content[0].text : 'Unable to get a response. Please try again.';
     chatHistories[id].push({ role: 'assistant', content: reply });
+    saveChatMessage(id, 'assistant', reply);
     addMsg(id, 'ai', reply);
   } catch(e) {
     removeTyping(id, typingId);
