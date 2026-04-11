@@ -31,7 +31,13 @@
   3. User can edit an existing account's details through the UI and changes persist across page reloads
   4. User can remove an account through the UI and it is gone from the sidebar on next load
   5. Chat history for an account is still present after a page reload (not reset to empty)
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Database foundation: SQLite schema, better-sqlite3 setup, REST API, seed 13 accounts
+- [ ] 01-02-PLAN.md — Dynamic frontend: rewrite index.html to render from API, add/edit/remove modals
+- [ ] 01-03-PLAN.md — Chat persistence: save and restore chat history across page reloads
+
 **UI hint**: yes
 
 ### Phase 2: Contact Intelligence
@@ -96,7 +102,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Persistence & Account Management | 0/? | Not started | - |
+| 1. Persistence & Account Management | 0/3 | Planning complete | - |
 | 2. Contact Intelligence | 0/? | Not started | - |
 | 3. Pursuit Tracking | 0/? | Not started | - |
 | 4. Pursuit Strategy | 0/? | Not started | - |
@@ -139,4 +145,4 @@
 
 ---
 *Roadmap created: 2026-04-10*
-*Last updated: 2026-04-10 after initial creation*
+*Last updated: 2026-04-10 after Phase 1 planning*
