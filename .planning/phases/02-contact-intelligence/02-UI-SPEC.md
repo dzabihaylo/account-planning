@@ -34,9 +34,9 @@ Declared values (must be multiples of 4):
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| xs | 4px | Icon gaps, badge padding, staleness dot spacing |
-| sm | 8px | Contact card internal element gaps, button padding (vertical), outreach log entry gaps |
-| md | 16px | Contact card padding, modal inner padding, form field spacing |
+| xs | 4px | Icon gaps, badge padding, staleness dot spacing, badge margin-top |
+| sm | 8px | Contact card internal element gaps, button padding (vertical), outreach log entry gaps, button/badge horizontal padding, grid gap, form padding, margins |
+| md | 16px | Contact card padding, modal inner padding, form field spacing, AI content padding |
 | lg | 24px | Contact grid gap, contact detail section spacing |
 | xl | 32px | Contacts tab content padding (matches `.acct-content` padding) |
 | 2xl | 48px | Empty contacts state vertical padding |
@@ -65,8 +65,8 @@ Phase 2 type assignments (drawn from the 4-size scale above):
 |---------|------|--------|------|
 | Contact name on card | 13px | 500 | DM Sans |
 | Contact title on card | 11px | 400 | DM Sans |
-| Influence badge label | 10px | 500 | DM Mono |
-| Staleness badge label | 10px | 500 | DM Mono |
+| Influence badge label | 11px | 500 | DM Mono |
+| Staleness badge label | 11px | 500 | DM Mono |
 | Contact detail section headers | 11px | 500 | DM Sans |
 | AI rationale / warm path body | 13px | 400 | DM Sans |
 | Outreach log date | 11px | 400 | DM Mono |
@@ -147,9 +147,9 @@ Contact cards follow the existing `.exec-card` pattern as a starting point but a
 
 **Structure:**
 ```
-.contact-grid    -- display: grid, grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)), gap: 12px
+.contact-grid    -- display: grid, grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)), gap: 16px
   .contact-card  -- background: var(--card), border: 1px solid var(--border),
-                    border-radius: 8px, padding: 14px 16px, cursor: pointer,
+                    border-radius: 8px, padding: 16px, cursor: pointer,
                     transition: border-color 0.12s, border-left: 3px solid transparent
     .contact-card-hdr  -- display: flex, align-items: center, gap: 8px
       .contact-av      -- width: 32px, height: 32px, border-radius: 50%,
@@ -158,7 +158,7 @@ Contact cards follow the existing `.exec-card` pattern as a starting point but a
                           font-size: 11px, font-weight: 500, color: white (initials)
       .contact-info    -- flex: 1
         .contact-name  -- font-size: 13px, font-weight: 500
-        .contact-title -- font-size: 11px, color: var(--muted), margin-top: 2px, line-height: 1.4
+        .contact-title -- font-size: 11px, color: var(--muted), margin-top: 4px, line-height: 1.4
       .contact-badges  -- display: flex, gap: 4px, flex-shrink: 0
         .influence-badge -- (see Influence Badge below)
         .stale-badge     -- (see Staleness Badge below)
@@ -180,9 +180,9 @@ Follows the existing `.priority` badge pattern (`.p-high`, `.p-med`, `.p-dev`).
 ```css
 .influence-badge {
   display: inline-block;
-  font-size: 10px;
-  padding: 2px 7px;
-  border-radius: 3px;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
   font-family: var(--mono);
   font-weight: 500;
   text-transform: uppercase;
@@ -195,14 +195,14 @@ Follows the existing `.priority` badge pattern (`.p-high`, `.p-med`, `.p-dev`).
 
 ### Staleness Badge (new in Phase 2)
 
-Same visual pattern as influence badge but smaller, placed to the right of the influence badge.
+Same visual pattern as influence badge, placed to the right of the influence badge.
 
 ```css
 .stale-badge {
   display: inline-block;
-  font-size: 9px;
-  padding: 2px 6px;
-  border-radius: 3px;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
   font-family: var(--mono);
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -224,7 +224,7 @@ Contacts are grouped by influence level. Each group has a header.
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
@@ -239,7 +239,7 @@ Group order: Champions first, then Evaluators, then Blockers. Groups with zero c
 The detail view renders inside the `.contact-card` element, below the `.contact-card-hdr`.
 
 ```
-.contact-detail   -- padding: 16px 0 0, margin-top: 12px,
+.contact-detail   -- padding: 16px 0 0, margin-top: 8px,
                      border-top: 1px solid var(--border), display: none
 .contact-detail.show -- display: block
 
@@ -268,8 +268,8 @@ Used when `ai_rationale` or `warm_path` is empty. Also used for refresh.
 .contact-generate-btn {
   background: var(--accent);
   border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
+  border-radius: 8px;
+  padding: 8px 16px;
   font-size: 13px;
   font-family: var(--font);
   color: #fff;
@@ -291,20 +291,20 @@ Displays AI-generated rationale and warm path text.
   background: rgba(59,130,246,0.06);
   border: 1px solid rgba(59,130,246,0.16);
   border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  padding: 12px 14px;
+  border-radius: 8px;
+  padding: 16px;
   font-size: 13px;
   line-height: 1.6;
 }
 ```
 
-This reuses the existing `.hl` (highlight) pattern exactly. Append a small "Refresh" link below in `--muted` color at 11px.
+This reuses the existing `.hl` (highlight) pattern exactly. Append a small "Refresh Rationale" or "Refresh Warm Path" link below in `--muted` color at 11px.
 
 ### Outreach Log Entry (new in Phase 2)
 
 ```
 .outreach-list       -- display: flex, flex-direction: column, gap: 8px
-  .outreach-entry    -- display: flex, align-items: flex-start, gap: 10px,
+  .outreach-entry    -- display: flex, align-items: flex-start, gap: 8px,
                         padding: 8px 0, border-bottom: 1px solid var(--border)
     .outreach-date   -- font-size: 11px, font-family: var(--mono), color: var(--muted),
                         min-width: 72px, flex-shrink: 0
@@ -341,7 +341,7 @@ Per D-09, outreach attempts are logged via inline form in the detail view (not a
 
 ```
 .outreach-form        -- display: flex, flex-direction: column, gap: 8px,
-                         padding: 12px, background: var(--surface),
+                         padding: 16px, background: var(--surface),
                          border: 1px solid var(--border), border-radius: 8px, margin-top: 8px
   .outreach-form-row  -- display: flex, gap: 8px
     select.form-input -- (channel dropdown, same .form-input style)
@@ -349,7 +349,7 @@ Per D-09, outreach attempts are logged via inline form in the detail view (not a
     input.form-input  -- (date picker, type="date", same .form-input style)
   textarea.form-input -- (notes, 2 rows, optional)
   .outreach-form-ftr  -- display: flex, justify-content: flex-end, gap: 8px
-    button.btn.btn-secondary -- "Cancel"
+    button.btn.btn-secondary -- "Discard"
     button.btn.btn-primary   -- "Log Outreach"
 ```
 
@@ -381,7 +381,7 @@ Same confirmation modal pattern as Phase 1 account removal. Contact soft-deletes
 Placed at the bottom of the contact detail view.
 
 ```
-.contact-actions    -- display: flex, gap: 8px, padding-top: 12px,
+.contact-actions    -- display: flex, gap: 8px, padding-top: 8px,
                        border-top: 1px solid var(--border), margin-top: 16px
   button.btn.btn-secondary   -- "Edit Contact"
   button.btn.btn-destructive -- "Delete Contact"
@@ -425,11 +425,12 @@ Placed at the top-right of the Contacts tab pane, above the contact grid.
 | AI warm path empty state | `No warm path identified yet.` |
 | AI warm path generate CTA | `Find Warm Path` |
 | AI generating state | `Generating...` |
-| AI refresh link | `Refresh` |
+| AI rationale refresh link | `Refresh Rationale` |
+| AI warm path refresh link | `Refresh Warm Path` |
 | Outreach log empty state | `No outreach logged yet.` |
 | Outreach add trigger | `+ Log Outreach` |
 | Outreach save CTA | `Log Outreach` |
-| Outreach cancel | `Cancel` |
+| Outreach discard | `Discard` |
 | Contact detail section -- info | `Contact Info` |
 | Contact detail section -- rationale | `Outreach Rationale` |
 | Contact detail section -- warm path | `Warm Path` |
@@ -476,9 +477,9 @@ Placed at the top-right of the Contacts tab pane, above the contact grid.
 |-------|----------|
 | Idle (no content) | "Generate Rationale" / "Find Warm Path" button visible |
 | Generating | Button text changes to "Generating...", disabled, `opacity: 0.6` |
-| Success | Button replaced by AI content block (`.ai-content-block`) with small "Refresh" link |
+| Success | Button replaced by AI content block (`.ai-content-block`) with "Refresh Rationale" or "Refresh Warm Path" link |
 | Error | Red error message at 11px below button: "Couldn't generate. Try again in a moment." |
-| Has content | AI content block displayed. "Refresh" link at bottom re-triggers generation. |
+| Has content | AI content block displayed. Contextual refresh link at bottom re-triggers generation. |
 
 ### Outreach Log Form
 
@@ -489,7 +490,7 @@ Placed at the top-right of the Contacts tab pane, above the contact grid.
 | Submitting | "Log Outreach" button shows "Saving..." text, disabled. |
 | Success | Form hides, new entry prepended to outreach list (optimistic UI from API response). |
 | Error | Red error message below form. |
-| Cancel | "Cancel" button hides the form without saving. |
+| Discard | "Discard" button hides the form without saving. |
 
 ### Add/Edit Contact Modal
 
