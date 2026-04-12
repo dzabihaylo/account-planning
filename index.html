@@ -403,11 +403,80 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 .empty-state h3 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
 .empty-state p { font-size: 13px; }
 
+/* CONTACT GRID & CARDS */
+.contact-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.contact-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; cursor: pointer; transition: border-color 0.12s; border-left: 3px solid transparent; }
+.contact-card:hover { border-color: rgba(59,130,246,0.3); }
+.contact-card.expanded { border-left-color: var(--accent); }
+.contact-card-hdr { display: flex; align-items: center; gap: 8px; }
+.contact-av { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--purple)); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: white; flex-shrink: 0; }
+.contact-info { flex: 1; min-width: 0; }
+.contact-name { font-size: 13px; font-weight: 500; }
+.contact-title { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-badges { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* INFLUENCE BADGES */
+.influence-badge { display: inline-block; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-family: var(--mono); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+.influence-champion { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: var(--green); }
+.influence-evaluator { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: var(--gold); }
+.influence-blocker { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+
+/* STALENESS BADGES */
+.stale-badge { display: inline-block; font-size: 11px; padding: 4px 8px; border-radius: 4px; font-family: var(--mono); font-weight: 500; letter-spacing: 0.05em; }
+.stale-fresh { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: var(--green); }
+.stale-aging { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: var(--gold); }
+.stale-stale { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+
+/* INFLUENCE GROUP HEADERS */
+.contact-group { margin-bottom: 24px; }
+.contact-group-hdr { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* CONTACTS HEADER */
+.contacts-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.contacts-count { font-size: 13px; color: var(--muted); }
+
+/* CONTACT DETAIL VIEW */
+.contact-detail { padding: 16px 0 0; margin-top: 8px; border-top: 1px solid var(--border); display: none; }
+.contact-detail.show { display: block; }
+.contact-section { margin-bottom: 16px; }
+.contact-section-hdr { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent2); margin-bottom: 8px; }
+.contact-section-body { font-size: 13px; line-height: 1.6; color: var(--text); }
+.contact-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-bottom: 16px; }
+.contact-field-label { font-size: 11px; color: var(--muted); }
+.contact-field-value { font-size: 13px; color: var(--text); }
+.contact-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 16px; }
+
+/* AI CONTENT BLOCK & GENERATE BUTTON */
+.ai-content-block { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.16); border-left: 3px solid var(--accent); border-radius: 8px; padding: 16px; font-size: 13px; line-height: 1.6; }
+.contact-generate-btn { background: var(--accent); border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-family: var(--font); color: #fff; cursor: pointer; transition: background 0.12s; }
+.contact-generate-btn:hover { background: #2563EB; }
+.contact-generate-btn:disabled { opacity: 0.6; pointer-events: none; }
+
+/* OUTREACH LIST & FORM */
+.outreach-list { display: flex; flex-direction: column; gap: 8px; }
+.outreach-entry { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.outreach-entry:last-child { border-bottom: none; }
+.outreach-date { font-size: 11px; font-family: var(--mono); color: var(--muted); min-width: 72px; flex-shrink: 0; }
+.outreach-body { flex: 1; }
+.outreach-tags { display: flex; gap: 4px; margin-bottom: 4px; }
+.outreach-tag { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-weight: 500; }
+.outreach-notes { font-size: 13px; color: var(--text); line-height: 1.5; }
+.outreach-form { display: flex; flex-direction: column; gap: 8px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; }
+.outreach-form-row { display: flex; gap: 8px; }
+.outreach-form-ftr { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* CONTACTS EMPTY STATE */
+.contacts-empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+.contacts-empty h3 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+.contacts-empty p { font-size: 13px; margin-bottom: 16px; }
+
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .g2,.g3,.g4 { grid-template-columns: 1fr; }
   .acct-header { padding: 20px 16px; }
   .acct-content { padding: 16px; }
+  .contact-grid { grid-template-columns: 1fr; }
+  .contact-fields { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -484,6 +553,73 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeRemoveModal()">Discard Changes</button>
       <button class="btn btn-destructive" id="removeConfirmBtn" onclick="confirmRemove()">Remove Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Add/Edit Modal -->
+<div class="modal-overlay" id="contactModal" onclick="closeContactModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <h2 id="contactModalTitle">Add Contact</h2>
+      <button class="modal-hdr-close" onclick="closeContactModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="contactEditId" value="">
+      <input type="hidden" id="contactAccountId" value="">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-input" id="contactName" placeholder="Full name">
+        <div class="form-error" id="contactNameError">Contact name is required.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Title *</label>
+        <input type="text" class="form-input" id="contactTitle" placeholder="Job title (e.g. VP Digital Engineering)">
+        <div class="form-error" id="contactTitleError">Job title is required.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Influence Level *</label>
+        <select class="form-input" id="contactInfluence">
+          <option value="">Select influence level</option>
+          <option value="Champion">Champion</option>
+          <option value="Evaluator">Evaluator</option>
+          <option value="Blocker">Blocker</option>
+        </select>
+        <div class="form-error" id="contactInfluenceError">Select an influence level.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-input" id="contactEmail" placeholder="Email address">
+      </div>
+      <div class="form-group">
+        <label class="form-label">LinkedIn</label>
+        <input type="text" class="form-input" id="contactLinkedin" placeholder="LinkedIn profile URL">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone</label>
+        <input type="tel" class="form-input" id="contactPhone" placeholder="Phone number">
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeContactModal()">Discard Changes</button>
+      <button class="btn btn-primary" id="contactModalSave" onclick="saveContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Delete Confirmation Modal -->
+<div class="modal-overlay" id="contactRemoveModal" onclick="closeContactRemoveModal()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+    <div class="modal-hdr">
+      <h2>Delete this contact?</h2>
+      <button class="modal-hdr-close" onclick="closeContactRemoveModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p id="contactRemoveMsg" style="font-size:13px;color:var(--text)"></p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeContactRemoveModal()">Discard Changes</button>
+      <button class="btn btn-destructive" id="contactRemoveBtn" onclick="confirmDeleteContact()">Delete Contact</button>
     </div>
   </div>
 </div>
