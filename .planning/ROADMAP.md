@@ -68,7 +68,14 @@ Plans:
   1. User can view a chronological activity log per account showing timestamped entries — what happened, who was involved, what was said
   2. User can describe a meeting in natural language to the AI and the AI proposes structured log entries extracted from that description
   3. AI-proposed entries are shown for review before being committed — user can accept, edit, or reject each entry before it hits the database
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Database schema v3 (activity_log table) and activity API routes (GET/POST)
+- [ ] 03-02-PLAN.md — Activity tab UI: timeline rendering, manual entry form, tab integration
+- [ ] 03-03-PLAN.md — AI debrief extraction endpoint, review panel with approve/edit/reject controls
+
+**UI hint**: yes
 
 ### Phase 4: Pursuit Strategy
 **Goal**: Each account has a living strategy layer — private intel, AI-synthesized strategy, and buying trigger tracking — that reflects cumulative pursuit learnings
@@ -110,7 +117,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Persistence & Account Management | 3/3 | Complete | - |
 | 2. Contact Intelligence | 0/3 | Planning complete | - |
-| 3. Pursuit Tracking | 0/? | Not started | - |
+| 3. Pursuit Tracking | 0/3 | Planning complete | - |
 | 4. Pursuit Strategy | 0/? | Not started | - |
 | 5. Intelligence Refresh | 0/? | Not started | - |
 | 6. Briefing & Output | 0/? | Not started | - |
@@ -151,4 +158,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-04-10*
-*Last updated: 2026-04-11 after Phase 2 planning*
+*Last updated: 2026-04-12 after Phase 3 planning*
