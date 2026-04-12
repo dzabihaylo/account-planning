@@ -727,6 +727,7 @@ function renderAccountPanel(account) {
 
   html += '<div class="acct-tabs">';
   html += '<button class="acct-tab active" onclick="showTab(\'' + id + '\',\'overview\',this)">Overview</button>';
+  html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'contacts\',this)">Contacts</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'ai\',this)">Ask AI</button>';
   html += '</div>';
 
@@ -736,6 +737,8 @@ function renderAccountPanel(account) {
   // SECURITY: escapeHtml MUST run before any .replace() that injects HTML tags.
   html += '<div class="hl"><div class="hl-label">Account Intelligence</div>' + escapeHtml(context).replace(/\n/g, '<br>') + '</div>';
   html += '</div>';
+  // Contacts tab
+  html += '<div class="tab-pane" id="' + id + '-contacts"><div id="' + id + '-contacts-panel"></div></div>';
   // AI tab
   html += '<div class="tab-pane" id="' + id + '-ai"><div id="' + id + '-ai-panel"></div></div>';
   html += '</div>';
@@ -786,6 +789,13 @@ function showTab(account, tab, btn) {
   if (tab === 'ai' && !chatHistories[account]) {
     chatHistories[account] = [];
     initAIPanel(account);
+  }
+  if (tab === 'contacts') {
+    var contactsPanel = document.getElementById(account + '-contacts-panel');
+    if (contactsPanel && !contactsPanel.dataset.loaded) {
+      contactsPanel.dataset.loaded = '1';
+      loadContacts(account);
+    }
   }
 }
 
@@ -1093,6 +1103,384 @@ async function confirmRemove() {
     btn.textContent = 'Remove Account';
     btn.disabled = false;
   }
+}
+
+// ---- Contact Staleness Helpers (D-12) ----
+function getStalenessClass(researchedAt) {
+  if (!researchedAt) return 'stale-stale';
+  var now = new Date();
+  var researched = new Date(researchedAt);
+  var days = Math.floor((now - researched) / (1000 * 60 * 60 * 24));
+  if (days < 30) return 'stale-fresh';
+  if (days < 90) return 'stale-aging';
+  return 'stale-stale';
+}
+
+function getStalenessLabel(researchedAt) {
+  if (!researchedAt) return 'STALE';
+  var now = new Date();
+  var researched = new Date(researchedAt);
+  var days = Math.floor((now - researched) / (1000 * 60 * 60 * 24));
+  if (days < 30) return 'FRESH';
+  if (days < 90) return 'AGING';
+  return 'STALE';
+}
+
+// ---- Contact Card Rendering (D-02) ----
+function renderContactCard(contact) {
+  var c = contact;
+  var words = escapeHtml(c.name).split(' ');
+  var initials = words.map(function(w) { return w.charAt(0); }).join('').substring(0, 2).toUpperCase();
+  var influenceClass = 'influence-' + escapeHtml(c.influence).toLowerCase();
+  var staleClass = getStalenessClass(c.researched_at);
+  var staleLabel = getStalenessLabel(c.researched_at);
+
+  var html = '<div class="contact-card" id="contact-card-' + c.id + '" onclick="toggleContactDetail(' + c.id + ',\'' + escapeHtml(c.account_id) + '\')">';
+  html += '<div class="contact-card-hdr">';
+  html += '<div class="contact-av">' + initials + '</div>';
+  html += '<div class="contact-info">';
+  html += '<div class="contact-name">' + escapeHtml(c.name) + '</div>';
+  html += '<div class="contact-title">' + escapeHtml(c.title) + '</div>';
+  html += '</div>';
+  html += '<div class="contact-badges">';
+  html += '<span class="influence-badge ' + influenceClass + '">' + escapeHtml(c.influence) + '</span>';
+  html += '<span class="stale-badge ' + staleClass + '">' + staleLabel + '</span>';
+  html += '</div>';
+  html += '</div>';
+  html += '<div class="contact-detail" id="contact-detail-' + c.id + '"></div>';
+  html += '</div>';
+  return html;
+}
+
+// ---- Contact Grid Rendering (D-01) ----
+function renderContactsGrid(accountId, contacts) {
+  var panel = document.getElementById(accountId + '-contacts-panel');
+  if (!panel) return;
+
+  var html = '<div class="contacts-header">';
+  html += '<span class="contacts-count">' + contacts.length + (contacts.length === 1 ? ' contact' : ' contacts') + '</span>';
+  html += '<button class="btn btn-primary" onclick="openAddContactModal(\'' + escapeHtml(accountId) + '\')">Add Contact</button>';
+  html += '</div>';
+
+  if (contacts.length === 0) {
+    html += '<div class="contacts-empty">';
+    html += '<h3>No contacts yet</h3>';
+    html += '<p>Add your first contact to start mapping decision-makers for this account.</p>';
+    html += '<button class="btn btn-primary" onclick="openAddContactModal(\'' + escapeHtml(accountId) + '\')">Add Contact</button>';
+    html += '</div>';
+    panel.innerHTML = html;
+    return;
+  }
+
+  var groups = { Champion: [], Evaluator: [], Blocker: [] };
+  contacts.forEach(function(c) {
+    if (groups[c.influence]) groups[c.influence].push(c);
+  });
+
+  var groupLabels = { Champion: 'Champions', Evaluator: 'Evaluators', Blocker: 'Blockers' };
+  var groupOrder = ['Champion', 'Evaluator', 'Blocker'];
+
+  groupOrder.forEach(function(influence) {
+    if (groups[influence].length === 0) return;
+    html += '<div class="contact-group">';
+    html += '<div class="contact-group-hdr">' + groupLabels[influence] + '</div>';
+    html += '<div class="contact-grid">';
+    groups[influence].forEach(function(contact) {
+      html += renderContactCard(contact);
+    });
+    html += '</div>';
+    html += '</div>';
+  });
+
+  panel.innerHTML = html;
+}
+
+// ---- Load Contacts from API ----
+function loadContacts(accountId) {
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/contacts')
+    .then(function(r) { return r.json(); })
+    .then(function(contacts) {
+      renderContactsGrid(accountId, contacts);
+    })
+    .catch(function() {
+      var panel = document.getElementById(accountId + '-contacts-panel');
+      if (panel) panel.innerHTML = '<p style="color:var(--red);font-size:13px">Something went wrong. Reload the page and try again.</p>';
+    });
+}
+
+// ---- Contact Detail Toggle (D-03) ----
+var expandedContactId = null;
+
+function toggleContactDetail(contactId, accountId) {
+  // Collapse currently expanded card
+  if (expandedContactId && expandedContactId !== contactId) {
+    var prevDetail = document.getElementById('contact-detail-' + expandedContactId);
+    var prevCard = document.getElementById('contact-card-' + expandedContactId);
+    if (prevDetail) prevDetail.classList.remove('show');
+    if (prevCard) prevCard.classList.remove('expanded');
+  }
+
+  var detail = document.getElementById('contact-detail-' + contactId);
+  var card = document.getElementById('contact-card-' + contactId);
+  if (!detail || !card) return;
+
+  if (detail.classList.contains('show')) {
+    detail.classList.remove('show');
+    card.classList.remove('expanded');
+    expandedContactId = null;
+  } else {
+    // Load detail content if empty
+    if (!detail.innerHTML) {
+      loadContactDetail(contactId, accountId);
+    }
+    detail.classList.add('show');
+    card.classList.add('expanded');
+    expandedContactId = contactId;
+  }
+}
+
+// ---- Contact Detail Loading ----
+function loadContactDetail(contactId, accountId) {
+  fetch('/api/contacts/' + contactId)
+    .then(function(r) { return r.json(); })
+    .then(function(contact) {
+      renderContactDetail(contact, accountId);
+    })
+    .catch(function() {
+      var detail = document.getElementById('contact-detail-' + contactId);
+      if (detail) detail.innerHTML = '<p style="color:var(--red);font-size:13px">Something went wrong. Reload the page and try again.</p>';
+    });
+}
+
+function renderContactDetail(contact, accountId) {
+  var c = contact;
+  var detail = document.getElementById('contact-detail-' + c.id);
+  if (!detail) return;
+
+  var html = '';
+
+  // Contact info section
+  html += '<div class="contact-section">';
+  html += '<div class="contact-section-hdr">Contact Info</div>';
+  html += '<div class="contact-fields">';
+  html += '<div><div class="contact-field-label">Email</div><div class="contact-field-value">' + (c.email ? escapeHtml(c.email) : '<span style="color:var(--muted)">Not set</span>') + '</div></div>';
+  html += '<div><div class="contact-field-label">LinkedIn</div><div class="contact-field-value">' + (c.linkedin ? '<a href="' + escapeHtml(c.linkedin) + '" target="_blank" style="color:var(--accent2)">' + escapeHtml(c.linkedin) + '</a>' : '<span style="color:var(--muted)">Not set</span>') + '</div></div>';
+  html += '<div><div class="contact-field-label">Phone</div><div class="contact-field-value">' + (c.phone ? escapeHtml(c.phone) : '<span style="color:var(--muted)">Not set</span>') + '</div></div>';
+  html += '</div>';
+  html += '</div>';
+
+  // AI Outreach Rationale section (placeholder for Plan 03)
+  html += '<div class="contact-section" id="rationale-section-' + c.id + '">';
+  html += '<div class="contact-section-hdr">Outreach Rationale</div>';
+  html += '<div class="contact-section-body" id="rationale-body-' + c.id + '">';
+  if (c.ai_rationale) {
+    html += '<div class="ai-content-block">' + escapeHtml(c.ai_rationale).replace(/\n/g, '<br>') + '</div>';
+    html += '<div style="margin-top:8px"><a href="javascript:void(0)" onclick="event.stopPropagation();generateAI(' + c.id + ',\'' + escapeHtml(accountId) + '\')" style="font-size:11px;color:var(--muted)">Refresh Rationale</a></div>';
+  } else {
+    html += '<p style="color:var(--muted);font-size:13px;margin-bottom:8px">No outreach rationale generated yet.</p>';
+    html += '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + c.id + ',\'' + escapeHtml(accountId) + '\')">Generate Rationale</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Warm Path section (placeholder for Plan 03)
+  html += '<div class="contact-section" id="warmpath-section-' + c.id + '">';
+  html += '<div class="contact-section-hdr">Warm Path</div>';
+  html += '<div class="contact-section-body" id="warmpath-body-' + c.id + '">';
+  if (c.warm_path) {
+    html += '<div class="ai-content-block">' + escapeHtml(c.warm_path).replace(/\n/g, '<br>') + '</div>';
+    html += '<div style="margin-top:8px"><a href="javascript:void(0)" onclick="event.stopPropagation();generateAI(' + c.id + ',\'' + escapeHtml(accountId) + '\')" style="font-size:11px;color:var(--muted)">Refresh Warm Path</a></div>';
+  } else {
+    html += '<p style="color:var(--muted);font-size:13px;margin-bottom:8px">No warm path identified yet.</p>';
+    html += '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + c.id + ',\'' + escapeHtml(accountId) + '\')">Find Warm Path</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Outreach History section (placeholder for Plan 03)
+  html += '<div class="contact-section" id="outreach-section-' + c.id + '">';
+  html += '<div class="contact-section-hdr">Outreach History</div>';
+  html += '<div id="outreach-list-' + c.id + '">';
+  if (c.outreach && c.outreach.length > 0) {
+    html += renderOutreachList(c.outreach);
+  } else {
+    html += '<p style="color:var(--muted);font-size:13px">No outreach logged yet.</p>';
+  }
+  html += '</div>';
+  html += '<div id="outreach-form-container-' + c.id + '"></div>';
+  html += '<a href="javascript:void(0)" onclick="event.stopPropagation();showOutreachForm(' + c.id + ')" style="font-size:13px;color:var(--accent2);margin-top:8px;display:inline-block" id="outreach-add-link-' + c.id + '">+ Log Outreach</a>';
+  html += '</div>';
+
+  // Action buttons
+  html += '<div class="contact-actions">';
+  html += '<button class="btn btn-secondary" onclick="event.stopPropagation();openEditContactModal(' + c.id + ')">Edit Contact</button>';
+  html += '<button class="btn btn-destructive" onclick="event.stopPropagation();openDeleteContactModal(' + c.id + ',\'' + escapeHtml(c.name).replace(/'/g, "\\'") + '\',\'' + escapeHtml(accountId) + '\')">Delete Contact</button>';
+  html += '<button class="btn btn-secondary" onclick="event.stopPropagation();generateAI(' + c.id + ',\'' + escapeHtml(accountId) + '\')">Refresh AI</button>';
+  html += '</div>';
+
+  detail.innerHTML = html;
+}
+
+function renderOutreachList(outreach) {
+  if (!outreach || outreach.length === 0) return '<p style="color:var(--muted);font-size:13px">No outreach logged yet.</p>';
+  var html = '<div class="outreach-list">';
+  outreach.forEach(function(entry) {
+    html += '<div class="outreach-entry">';
+    html += '<div class="outreach-date">' + escapeHtml(entry.date) + '</div>';
+    html += '<div class="outreach-body">';
+    html += '<div class="outreach-tags">';
+    html += '<span class="outreach-tag" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.18);color:#93C5FD">' + escapeHtml(entry.channel) + '</span>';
+    var outcomeColor = entry.outcome === 'connected' || entry.outcome === 'meeting scheduled' ? 'background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#86EFAC' : entry.outcome === 'no response' ? 'background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);color:#FCD34D' : 'background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:var(--red)';
+    html += '<span class="outreach-tag" style="' + outcomeColor + '">' + escapeHtml(entry.outcome) + '</span>';
+    html += '</div>';
+    if (entry.notes) html += '<div class="outreach-notes">' + escapeHtml(entry.notes) + '</div>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// ---- Contact Modal Functions (D-04) ----
+function openAddContactModal(accountId) {
+  document.getElementById('contactEditId').value = '';
+  document.getElementById('contactAccountId').value = accountId;
+  document.getElementById('contactModalTitle').textContent = 'Add Contact';
+  document.getElementById('contactName').value = '';
+  document.getElementById('contactTitle').value = '';
+  document.getElementById('contactInfluence').value = '';
+  document.getElementById('contactEmail').value = '';
+  document.getElementById('contactLinkedin').value = '';
+  document.getElementById('contactPhone').value = '';
+  document.querySelectorAll('#contactModal .form-error').forEach(function(e) { e.style.display = 'none'; });
+  document.getElementById('contactModalSave').textContent = 'Save Contact';
+  document.getElementById('contactModalSave').disabled = false;
+  document.getElementById('contactModal').classList.add('show');
+}
+
+function openEditContactModal(contactId) {
+  fetch('/api/contacts/' + contactId)
+    .then(function(r) { return r.json(); })
+    .then(function(c) {
+      document.getElementById('contactEditId').value = c.id;
+      document.getElementById('contactAccountId').value = c.account_id;
+      document.getElementById('contactModalTitle').textContent = 'Edit Contact';
+      document.getElementById('contactName').value = c.name || '';
+      document.getElementById('contactTitle').value = c.title || '';
+      document.getElementById('contactInfluence').value = c.influence || '';
+      document.getElementById('contactEmail').value = c.email || '';
+      document.getElementById('contactLinkedin').value = c.linkedin || '';
+      document.getElementById('contactPhone').value = c.phone || '';
+      document.querySelectorAll('#contactModal .form-error').forEach(function(e) { e.style.display = 'none'; });
+      document.getElementById('contactModalSave').textContent = 'Save Changes';
+      document.getElementById('contactModalSave').disabled = false;
+      document.getElementById('contactModal').classList.add('show');
+    });
+}
+
+function closeContactModal() {
+  document.getElementById('contactModal').classList.remove('show');
+}
+
+function saveContact() {
+  var name = document.getElementById('contactName').value.trim();
+  var title = document.getElementById('contactTitle').value.trim();
+  var influence = document.getElementById('contactInfluence').value;
+  var valid = true;
+
+  document.querySelectorAll('#contactModal .form-error').forEach(function(e) { e.style.display = 'none'; });
+
+  if (!name) { document.getElementById('contactNameError').style.display = 'block'; valid = false; }
+  if (!title) { document.getElementById('contactTitleError').style.display = 'block'; valid = false; }
+  if (!influence) { document.getElementById('contactInfluenceError').style.display = 'block'; valid = false; }
+  if (!valid) return;
+
+  var editId = document.getElementById('contactEditId').value;
+  var accountId = document.getElementById('contactAccountId').value;
+  var data = {
+    name: name, title: title, influence: influence,
+    email: document.getElementById('contactEmail').value.trim(),
+    linkedin: document.getElementById('contactLinkedin').value.trim(),
+    phone: document.getElementById('contactPhone').value.trim()
+  };
+
+  var saveBtn = document.getElementById('contactModalSave');
+  saveBtn.textContent = 'Saving...';
+  saveBtn.disabled = true;
+
+  var url = editId ? '/api/contacts/' + editId : '/api/accounts/' + encodeURIComponent(accountId) + '/contacts';
+  var method = editId ? 'PUT' : 'POST';
+
+  fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Save failed');
+      return r.json();
+    })
+    .then(function() {
+      closeContactModal();
+      // Reload contacts grid
+      var contactsPanel = document.getElementById(accountId + '-contacts-panel');
+      if (contactsPanel) contactsPanel.dataset.loaded = '';
+      loadContacts(accountId);
+      // Clear expanded contact detail so it reloads fresh
+      expandedContactId = null;
+    })
+    .catch(function() {
+      saveBtn.textContent = editId ? 'Save Changes' : 'Save Contact';
+      saveBtn.disabled = false;
+    });
+}
+
+// ---- Contact Delete Functions (D-18) ----
+var deleteContactId = null;
+var deleteContactAccountId = null;
+
+function openDeleteContactModal(contactId, contactName, accountId) {
+  deleteContactId = contactId;
+  deleteContactAccountId = accountId;
+  document.getElementById('contactRemoveMsg').innerHTML = escapeHtml(contactName) + ' and their outreach history will be hidden. You can restore them later.';
+  document.getElementById('contactRemoveBtn').textContent = 'Delete Contact';
+  document.getElementById('contactRemoveBtn').disabled = false;
+  document.getElementById('contactRemoveModal').classList.add('show');
+}
+
+function closeContactRemoveModal() {
+  document.getElementById('contactRemoveModal').classList.remove('show');
+  deleteContactId = null;
+  deleteContactAccountId = null;
+}
+
+function confirmDeleteContact() {
+  if (!deleteContactId) return;
+  var btn = document.getElementById('contactRemoveBtn');
+  btn.textContent = 'Deleting...';
+  btn.disabled = true;
+
+  fetch('/api/contacts/' + deleteContactId, { method: 'DELETE' })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Delete failed');
+      return r.json();
+    })
+    .then(function() {
+      closeContactRemoveModal();
+      loadContacts(deleteContactAccountId);
+      expandedContactId = null;
+    })
+    .catch(function() {
+      btn.textContent = 'Delete Contact';
+      btn.disabled = false;
+    });
+}
+
+// ---- Plan 03 Stubs (prevent onclick errors) ----
+function generateAI(contactId, accountId) {
+  // Implemented in Plan 03
+  console.log('generateAI called for contact', contactId);
+}
+
+function showOutreachForm(contactId) {
+  // Implemented in Plan 03
+  console.log('showOutreachForm called for contact', contactId);
 }
 
 // ---- Init ----
