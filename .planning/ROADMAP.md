@@ -51,7 +51,13 @@ Plans:
   4. User can add a new contact, edit an existing contact, or delete a contact — changes persist
   5. User can log an outreach attempt per contact (date, channel, outcome) and see prior attempts
   6. Contacts show a staleness indicator when the researched_at date is old
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Database schema v2 (contacts + outreach_log tables) and 7 REST API routes
+- [ ] 02-02-PLAN.md — Contacts tab UI: card grid, influence grouping, staleness badges, add/edit/delete modals
+- [ ] 02-03-PLAN.md — AI generation UI (rationale + warm path) and outreach logging inline form
+
 **UI hint**: yes
 
 ### Phase 3: Pursuit Tracking
@@ -102,8 +108,8 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Persistence & Account Management | 0/3 | Planning complete | - |
-| 2. Contact Intelligence | 0/? | Not started | - |
+| 1. Persistence & Account Management | 3/3 | Complete | - |
+| 2. Contact Intelligence | 0/3 | Planning complete | - |
 | 3. Pursuit Tracking | 0/? | Not started | - |
 | 4. Pursuit Strategy | 0/? | Not started | - |
 | 5. Intelligence Refresh | 0/? | Not started | - |
@@ -145,4 +151,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-04-10*
-*Last updated: 2026-04-10 after Phase 1 planning*
+*Last updated: 2026-04-11 after Phase 2 planning*
