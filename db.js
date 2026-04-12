@@ -54,6 +54,48 @@ if (version === 0) {
   migrate();
 }
 
+if (version < 2) {
+  const migrate2 = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS contacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        title TEXT NOT NULL DEFAULT '',
+        role TEXT NOT NULL DEFAULT '',
+        influence TEXT NOT NULL CHECK(influence IN ('Champion', 'Evaluator', 'Blocker')),
+        email TEXT NOT NULL DEFAULT '',
+        linkedin TEXT NOT NULL DEFAULT '',
+        phone TEXT NOT NULL DEFAULT '',
+        ai_rationale TEXT,
+        warm_path TEXT,
+        researched_at TEXT,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_contacts_account ON contacts(account_id);
+
+      CREATE TABLE IF NOT EXISTS outreach_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        contact_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        channel TEXT NOT NULL CHECK(channel IN ('email', 'linkedin', 'phone', 'meeting', 'other')),
+        outcome TEXT NOT NULL CHECK(outcome IN ('connected', 'no response', 'declined', 'meeting scheduled')),
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (contact_id) REFERENCES contacts(id)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_outreach_contact ON outreach_log(contact_id);
+      PRAGMA user_version = 2;
+    `);
+  });
+  migrate2();
+}
+
 // Seed data
 const count = db.prepare('SELECT COUNT(*) AS cnt FROM accounts').get().cnt;
 
@@ -306,6 +348,72 @@ function clearChatMessages(accountId) {
   db.prepare('DELETE FROM chat_messages WHERE account_id = ?').run(accountId);
 }
 
+// Contact query helpers
+
+function getContacts(accountId) {
+  return db.prepare("SELECT * FROM contacts WHERE account_id = ? AND is_deleted = 0 ORDER BY CASE influence WHEN 'Champion' THEN 1 WHEN 'Evaluator' THEN 2 WHEN 'Blocker' THEN 3 END, name").all(accountId);
+}
+
+function getContact(id) {
+  return db.prepare('SELECT * FROM contacts WHERE id = ? AND is_deleted = 0').get(id);
+}
+
+function createContact({ account_id, name, title, role, influence, email, linkedin, phone }) {
+  const result = db.prepare(`
+    INSERT INTO contacts (account_id, name, title, role, influence, email, linkedin, phone)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(account_id, name, title || '', role || '', influence, email || '', linkedin || '', phone || '');
+  return db.prepare('SELECT * FROM contacts WHERE id = ?').get(result.lastInsertRowid);
+}
+
+function updateContact(id, fields) {
+  const existing = db.prepare('SELECT * FROM contacts WHERE id = ? AND is_deleted = 0').get(id);
+  if (!existing) return null;
+
+  const allowedFields = ['name', 'title', 'role', 'influence', 'email', 'linkedin', 'phone'];
+  const setClauses = [];
+  const values = [];
+
+  for (const field of allowedFields) {
+    if (fields[field] !== undefined) {
+      setClauses.push(field + ' = ?');
+      values.push(fields[field]);
+    }
+  }
+
+  if (setClauses.length === 0) {
+    db.prepare("UPDATE contacts SET updated_at = datetime('now') WHERE id = ?").run(id);
+    return db.prepare('SELECT * FROM contacts WHERE id = ?').get(id);
+  }
+
+  setClauses.push("updated_at = datetime('now')");
+  values.push(id);
+
+  db.prepare('UPDATE contacts SET ' + setClauses.join(', ') + ' WHERE id = ?').run(...values);
+  return db.prepare('SELECT * FROM contacts WHERE id = ?').get(id);
+}
+
+function deleteContact(id) {
+  const result = db.prepare("UPDATE contacts SET is_deleted = 1, updated_at = datetime('now') WHERE id = ? AND is_deleted = 0").run(id);
+  if (result.changes === 0) return null;
+  return { success: true };
+}
+
+function getOutreachLog(contactId) {
+  return db.prepare('SELECT * FROM outreach_log WHERE contact_id = ? ORDER BY date DESC, created_at DESC').all(contactId);
+}
+
+function addOutreachEntry(contactId, { date, channel, outcome, notes }) {
+  const result = db.prepare('INSERT INTO outreach_log (contact_id, date, channel, outcome, notes) VALUES (?, ?, ?, ?, ?)').run(contactId, date, channel, outcome, notes || '');
+  return db.prepare('SELECT * FROM outreach_log WHERE id = ?').get(result.lastInsertRowid);
+}
+
+function updateContactAI(id, { ai_rationale, warm_path }) {
+  const result = db.prepare("UPDATE contacts SET ai_rationale = ?, warm_path = ?, researched_at = datetime('now'), updated_at = datetime('now') WHERE id = ? AND is_deleted = 0").run(ai_rationale, warm_path, id);
+  if (result.changes === 0) return null;
+  return db.prepare('SELECT * FROM contacts WHERE id = ?').get(id);
+}
+
 module.exports = {
   db,
   getAccounts,
@@ -316,5 +424,13 @@ module.exports = {
   restoreAccount,
   getChatMessages,
   addChatMessage,
-  clearChatMessages
+  clearChatMessages,
+  getContacts,
+  getContact,
+  createContact,
+  updateContact,
+  deleteContact,
+  getOutreachLog,
+  addOutreachEntry,
+  updateContactAI
 };
