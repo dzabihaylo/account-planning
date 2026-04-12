@@ -54,9 +54,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Database schema v2 (contacts + outreach_log tables) and 7 REST API routes
-- [ ] 02-02-PLAN.md — Contacts tab UI: card grid, influence grouping, staleness badges, add/edit/delete modals
-- [ ] 02-03-PLAN.md — AI generation UI (rationale + warm path) and outreach logging inline form
+- [x] 02-01-PLAN.md — Database schema v2 (contacts + outreach_log tables) and 7 REST API routes
+- [x] 02-02-PLAN.md — Contacts tab UI: card grid, influence grouping, staleness badges, add/edit/delete modals
+- [x] 02-03-PLAN.md — AI generation UI (rationale + warm path) and outreach logging inline form
 
 **UI hint**: yes
 
