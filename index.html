@@ -1472,15 +1472,168 @@ function confirmDeleteContact() {
     });
 }
 
-// ---- Plan 03 Stubs (prevent onclick errors) ----
+// ---- AI Generation & Outreach Logging (Plan 03) ----
 function generateAI(contactId, accountId) {
-  // Implemented in Plan 03
-  console.log('generateAI called for contact', contactId);
+  var rationaleBody = document.getElementById('rationale-body-' + contactId);
+  var warmpathBody = document.getElementById('warmpath-body-' + contactId);
+
+  // Show generating state on both sections
+  if (rationaleBody) {
+    rationaleBody.innerHTML = '<button class="contact-generate-btn" disabled>Generating...</button>';
+  }
+  if (warmpathBody) {
+    warmpathBody.innerHTML = '<button class="contact-generate-btn" disabled>Generating...</button>';
+  }
+
+  fetch('/api/contacts/' + contactId + '/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Generate failed');
+      return r.json();
+    })
+    .then(function(contact) {
+      // Update rationale section
+      if (rationaleBody) {
+        var rHtml = '';
+        if (contact.ai_rationale) {
+          rHtml += '<div class="ai-content-block">' + escapeHtml(contact.ai_rationale).replace(/\n/g, '<br>') + '</div>';
+          rHtml += '<div style="margin-top:8px"><a href="javascript:void(0)" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')" style="font-size:11px;color:var(--muted)">Refresh Rationale</a></div>';
+        } else {
+          rHtml += '<p style="color:var(--muted);font-size:13px;margin-bottom:8px">No outreach rationale generated yet.</p>';
+          rHtml += '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Generate Rationale</button>';
+        }
+        rationaleBody.innerHTML = rHtml;
+      }
+
+      // Update warm path section
+      if (warmpathBody) {
+        var wHtml = '';
+        if (contact.warm_path) {
+          wHtml += '<div class="ai-content-block">' + escapeHtml(contact.warm_path).replace(/\n/g, '<br>') + '</div>';
+          wHtml += '<div style="margin-top:8px"><a href="javascript:void(0)" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')" style="font-size:11px;color:var(--muted)">Refresh Warm Path</a></div>';
+        } else {
+          wHtml += '<p style="color:var(--muted);font-size:13px;margin-bottom:8px">No warm path identified yet.</p>';
+          wHtml += '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Find Warm Path</button>';
+        }
+        warmpathBody.innerHTML = wHtml;
+      }
+
+      // Update staleness badge on the card (researched_at just updated)
+      var card = document.getElementById('contact-card-' + contactId);
+      if (card && contact.researched_at) {
+        var staleBadge = card.querySelector('.stale-badge');
+        if (staleBadge) {
+          staleBadge.className = 'stale-badge ' + getStalenessClass(contact.researched_at);
+          staleBadge.textContent = getStalenessLabel(contact.researched_at);
+        }
+      }
+    })
+    .catch(function() {
+      if (rationaleBody) {
+        rationaleBody.innerHTML = '<p style="color:var(--red);font-size:11px;margin-bottom:8px">Couldn\'t generate. Try again in a moment.</p>' +
+          '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Generate Rationale</button>';
+      }
+      if (warmpathBody) {
+        warmpathBody.innerHTML = '<p style="color:var(--red);font-size:11px;margin-bottom:8px">Couldn\'t generate. Try again in a moment.</p>' +
+          '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Find Warm Path</button>';
+      }
+    });
 }
 
 function showOutreachForm(contactId) {
-  // Implemented in Plan 03
-  console.log('showOutreachForm called for contact', contactId);
+  var container = document.getElementById('outreach-form-container-' + contactId);
+  var addLink = document.getElementById('outreach-add-link-' + contactId);
+  if (!container) return;
+
+  // Hide the "+ Log Outreach" link
+  if (addLink) addLink.style.display = 'none';
+
+  // Get today's date in YYYY-MM-DD format for the date input default
+  var today = new Date().toISOString().split('T')[0];
+
+  var html = '<div class="outreach-form" id="outreach-form-' + contactId + '">';
+  html += '<div class="outreach-form-row">';
+  html += '<input type="date" class="form-input" id="outreach-date-' + contactId + '" value="' + today + '" style="flex:1">';
+  html += '<select class="form-input" id="outreach-channel-' + contactId + '" style="flex:1">';
+  html += '<option value="">Channel</option>';
+  html += '<option value="email">Email</option>';
+  html += '<option value="linkedin">LinkedIn</option>';
+  html += '<option value="phone">Phone</option>';
+  html += '<option value="meeting">Meeting</option>';
+  html += '<option value="other">Other</option>';
+  html += '</select>';
+  html += '<select class="form-input" id="outreach-outcome-' + contactId + '" style="flex:1">';
+  html += '<option value="">Outcome</option>';
+  html += '<option value="connected">Connected</option>';
+  html += '<option value="no response">No Response</option>';
+  html += '<option value="declined">Declined</option>';
+  html += '<option value="meeting scheduled">Meeting Scheduled</option>';
+  html += '</select>';
+  html += '</div>';
+  html += '<textarea class="form-input" id="outreach-notes-' + contactId + '" rows="2" placeholder="Notes (optional)" style="resize:vertical"></textarea>';
+  html += '<div id="outreach-form-error-' + contactId + '" style="display:none;color:var(--red);font-size:11px"></div>';
+  html += '<div class="outreach-form-ftr">';
+  html += '<button class="btn btn-secondary" onclick="event.stopPropagation();hideOutreachForm(' + contactId + ')">Discard</button>';
+  html += '<button class="btn btn-primary" id="outreach-save-' + contactId + '" onclick="event.stopPropagation();submitOutreach(' + contactId + ')">Log Outreach</button>';
+  html += '</div>';
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function hideOutreachForm(contactId) {
+  var container = document.getElementById('outreach-form-container-' + contactId);
+  var addLink = document.getElementById('outreach-add-link-' + contactId);
+  if (container) container.innerHTML = '';
+  if (addLink) addLink.style.display = 'inline-block';
+}
+
+function submitOutreach(contactId) {
+  var date = document.getElementById('outreach-date-' + contactId).value;
+  var channel = document.getElementById('outreach-channel-' + contactId).value;
+  var outcome = document.getElementById('outreach-outcome-' + contactId).value;
+  var notes = document.getElementById('outreach-notes-' + contactId).value.trim();
+  var errorEl = document.getElementById('outreach-form-error-' + contactId);
+
+  // Validate required fields
+  if (!date || !channel || !outcome) {
+    if (errorEl) { errorEl.textContent = 'Date, channel, and outcome are required.'; errorEl.style.display = 'block'; }
+    return;
+  }
+
+  var saveBtn = document.getElementById('outreach-save-' + contactId);
+  if (saveBtn) { saveBtn.textContent = 'Saving...'; saveBtn.disabled = true; }
+
+  fetch('/api/contacts/' + contactId + '/outreach', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date: date, channel: channel, outcome: outcome, notes: notes })
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Save failed');
+      return r.json();
+    })
+    .then(function(entry) {
+      // Hide the form
+      hideOutreachForm(contactId);
+
+      // Reload the outreach list by fetching the full contact
+      fetch('/api/contacts/' + contactId)
+        .then(function(r) { return r.json(); })
+        .then(function(contact) {
+          var listEl = document.getElementById('outreach-list-' + contactId);
+          if (listEl && contact.outreach) {
+            listEl.innerHTML = renderOutreachList(contact.outreach);
+          }
+        });
+    })
+    .catch(function() {
+      if (errorEl) { errorEl.textContent = "Couldn't save. Check your connection and try again."; errorEl.style.display = 'block'; }
+      if (saveBtn) { saveBtn.textContent = 'Log Outreach'; saveBtn.disabled = false; }
+    });
 }
 
 // ---- Init ----
