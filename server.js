@@ -266,6 +266,245 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Contact API routes
+  const contactsMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/contacts$/);
+  const contactMatch = parsed.pathname.match(/^\/api\/contacts\/(\d+)$/);
+  const outreachMatch = parsed.pathname.match(/^\/api\/contacts\/(\d+)\/outreach$/);
+  const generateMatch = parsed.pathname.match(/^\/api\/contacts\/(\d+)\/generate$/);
+
+  // POST /api/contacts/:id/generate - AI generate rationale + warm path (must be before generic contactMatch)
+  if (req.method === 'POST' && generateMatch) {
+    const contactId = parseInt(generateMatch[1]);
+    const contact = db.getContact(contactId);
+    if (!contact) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Contact not found' }));
+      return;
+    }
+    const account = db.getAccount(contact.account_id);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+
+    const systemPrompt = GD_CONTEXT + '\n\nACCOUNT: ' + account.name + '\nSECTOR: ' + account.sector + '\nHQ: ' + account.hq + '\nREVENUE: ' + account.revenue + '\n\nACCOUNT INTELLIGENCE:\n' + account.context;
+    const userMessage = 'You are helping a sales team at Grid Dynamics prepare outreach to a specific contact.\n\nCONTACT: ' + contact.name + '\nTITLE: ' + contact.title + '\nINFLUENCE LEVEL: ' + contact.influence + '\n\nProvide two sections separated by the exact delimiter ---SECTION_BREAK---\n\nSECTION 1 - OUTREACH RATIONALE: Why would this person care about Grid Dynamics? What specific problems can GD solve for them?\n\nSECTION 2 - WARM PATH: How to reach this person. Mutual connections, shared networks, events, referral paths, or direct channels. Be specific and actionable.';
+
+    const payload = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+    const options = {
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    const proxy = https.request(options, (apiRes) => {
+      let data = '';
+      apiRes.on('data', chunk => { data += chunk; });
+      apiRes.on('end', () => {
+        try {
+          const parsed_resp = JSON.parse(data);
+          if (apiRes.statusCode !== 200) {
+            res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
+            res.end(data);
+            return;
+          }
+          const text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
+          const parts = text.split('---SECTION_BREAK---');
+          let ai_rationale, warm_path;
+          if (parts.length >= 2) {
+            ai_rationale = parts[0].trim();
+            warm_path = parts[1].trim();
+          } else {
+            ai_rationale = text.trim();
+            warm_path = '';
+          }
+          db.updateContactAI(contactId, { ai_rationale: ai_rationale, warm_path: warm_path });
+          const updated = db.getContact(contactId);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(updated));
+        } catch (e) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+        }
+      });
+    });
+
+    proxy.on('error', (e) => {
+      console.error('Anthropic API error:', e.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+    });
+
+    proxy.write(payload);
+    proxy.end();
+    return;
+  }
+
+  // POST /api/contacts/:id/outreach - log an outreach attempt (must be before generic contactMatch)
+  if (req.method === 'POST' && outreachMatch) {
+    readBody(req, res, (body) => {
+      let parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      const { date, channel, outcome, notes } = parsed_body;
+      if (!date || typeof date !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'date is required' }));
+        return;
+      }
+      const validChannels = ['email', 'linkedin', 'phone', 'meeting', 'other'];
+      if (!channel || !validChannels.includes(channel)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'channel must be one of: ' + validChannels.join(', ') }));
+        return;
+      }
+      const validOutcomes = ['connected', 'no response', 'declined', 'meeting scheduled'];
+      if (!outcome || !validOutcomes.includes(outcome)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'outcome must be one of: ' + validOutcomes.join(', ') }));
+        return;
+      }
+      const contactId = parseInt(outreachMatch[1]);
+      const contact = db.getContact(contactId);
+      if (!contact) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Contact not found' }));
+        return;
+      }
+      const entry = db.addOutreachEntry(contactId, { date: date, channel: channel, outcome: outcome, notes: notes || '' });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(entry));
+    });
+    return;
+  }
+
+  // GET /api/contacts/:id - get single contact with outreach history
+  if (req.method === 'GET' && contactMatch) {
+    const contact = db.getContact(parseInt(contactMatch[1]));
+    if (!contact) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Contact not found' }));
+      return;
+    }
+    const outreach = db.getOutreachLog(contact.id);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(Object.assign({}, contact, { outreach: outreach })));
+    return;
+  }
+
+  // PUT /api/contacts/:id - update contact fields
+  if (req.method === 'PUT' && contactMatch) {
+    readBody(req, res, (body) => {
+      let parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      const updated = db.updateContact(parseInt(contactMatch[1]), parsed_body);
+      if (!updated) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Contact not found' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(updated));
+    });
+    return;
+  }
+
+  // DELETE /api/contacts/:id - soft delete contact
+  if (req.method === 'DELETE' && contactMatch) {
+    const result = db.deleteContact(parseInt(contactMatch[1]));
+    if (!result) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Contact not found' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(result));
+    return;
+  }
+
+  // GET /api/accounts/:id/contacts - list contacts for an account
+  if (req.method === 'GET' && contactsMatch) {
+    const contacts = db.getContacts(contactsMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(contacts));
+    return;
+  }
+
+  // POST /api/accounts/:id/contacts - create a new contact
+  if (req.method === 'POST' && contactsMatch) {
+    readBody(req, res, (body) => {
+      let parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      const { name, title, influence, role, email, linkedin, phone } = parsed_body;
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'name is required' }));
+        return;
+      }
+      if (!title || typeof title !== 'string' || !title.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'title is required' }));
+        return;
+      }
+      const validInfluence = ['Champion', 'Evaluator', 'Blocker'];
+      if (!influence || !validInfluence.includes(influence)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'influence must be one of: ' + validInfluence.join(', ') }));
+        return;
+      }
+      const account = db.getAccount(contactsMatch[1]);
+      if (!account) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Account not found' }));
+        return;
+      }
+      const contact = db.createContact({
+        account_id: contactsMatch[1],
+        name: name,
+        title: title,
+        role: role || '',
+        influence: influence,
+        email: email || '',
+        linkedin: linkedin || '',
+        phone: phone || ''
+      });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(contact));
+    });
+    return;
+  }
+
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
     readBody(req, res, (body) => {
