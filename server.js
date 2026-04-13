@@ -505,6 +505,77 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Activity log API routes
+  const activityMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/activity$/);
+
+  // GET /api/accounts/:id/activity - list activity entries (reverse chronological)
+  if (req.method === 'GET' && activityMatch) {
+    const account = db.getAccount(activityMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+    const entries = db.getActivity(activityMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(entries));
+    return;
+  }
+
+  // POST /api/accounts/:id/activity - create a new activity entry
+  if (req.method === 'POST' && activityMatch) {
+    readBody(req, res, (body) => {
+      let parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      const account = db.getAccount(activityMatch[1]);
+      if (!account) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Account not found' }));
+        return;
+      }
+      const validTypes = ['meeting', 'call', 'email', 'note', 'other'];
+      if (!parsed_body.type || !validTypes.includes(parsed_body.type)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'type must be one of: ' + validTypes.join(', ') }));
+        return;
+      }
+      if (!parsed_body.summary || typeof parsed_body.summary !== 'string' || !parsed_body.summary.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'summary is required' }));
+        return;
+      }
+      const validSources = ['manual', 'ai_debrief'];
+      var source = parsed_body.source || 'manual';
+      if (!validSources.includes(source)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'source must be one of: ' + validSources.join(', ') }));
+        return;
+      }
+      var linked_contacts = parsed_body.linked_contacts;
+      if (linked_contacts && typeof linked_contacts !== 'string') {
+        linked_contacts = JSON.stringify(linked_contacts);
+      }
+      const entry = db.addActivity({
+        account_id: activityMatch[1],
+        type: parsed_body.type,
+        participants: parsed_body.participants || '',
+        summary: parsed_body.summary.trim(),
+        linked_contacts: linked_contacts || null,
+        source: source,
+        ai_raw: parsed_body.ai_raw || null
+      });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(entry));
+    });
+    return;
+  }
+
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
     readBody(req, res, (body) => {
