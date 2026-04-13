@@ -118,6 +118,44 @@ if (version < 3) {
   migrate3();
 }
 
+if (version < 4) {
+  const migrate4 = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS private_intel (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_intel_account ON private_intel(account_id);
+
+      CREATE TABLE IF NOT EXISTS strategy_summaries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL UNIQUE,
+        content TEXT NOT NULL,
+        is_edited INTEGER NOT NULL DEFAULT 0,
+        generated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        edited_at TEXT,
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS buying_triggers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        tag TEXT NOT NULL,
+        category TEXT NOT NULL,
+        notes TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_triggers_account ON buying_triggers(account_id);
+      PRAGMA user_version = 4;
+    `);
+  });
+  migrate4();
+}
+
 // Seed data
 const count = db.prepare('SELECT COUNT(*) AS cnt FROM accounts').get().cnt;
 
@@ -455,6 +493,57 @@ function addActivity({ account_id, type, participants, summary, linked_contacts,
   return db.prepare('SELECT * FROM activity_log WHERE id = ?').get(result.lastInsertRowid);
 }
 
+// Private intel query helpers
+
+function getIntel(accountId) {
+  return db.prepare('SELECT * FROM private_intel WHERE account_id = ? ORDER BY created_at DESC').all(accountId);
+}
+
+function addIntel(accountId, content) {
+  var result = db.prepare('INSERT INTO private_intel (account_id, content) VALUES (?, ?)').run(accountId, content);
+  return db.prepare('SELECT * FROM private_intel WHERE id = ?').get(result.lastInsertRowid);
+}
+
+// Strategy summary query helpers
+
+function getStrategy(accountId) {
+  return db.prepare('SELECT * FROM strategy_summaries WHERE account_id = ?').get(accountId);
+}
+
+function upsertStrategy(accountId, content) {
+  db.prepare(`
+    INSERT INTO strategy_summaries (account_id, content, generated_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(account_id) DO UPDATE SET
+      content = excluded.content,
+      generated_at = excluded.generated_at,
+      is_edited = 0,
+      edited_at = NULL
+  `).run(accountId, content);
+  return db.prepare('SELECT * FROM strategy_summaries WHERE account_id = ?').get(accountId);
+}
+
+function updateStrategyContent(accountId, content) {
+  var result = db.prepare(`
+    UPDATE strategy_summaries
+    SET content = ?, is_edited = 1, edited_at = datetime('now')
+    WHERE account_id = ?
+  `).run(content, accountId);
+  if (result.changes === 0) return null;
+  return db.prepare('SELECT * FROM strategy_summaries WHERE account_id = ?').get(accountId);
+}
+
+// Buying triggers query helpers
+
+function getTriggers(accountId) {
+  return db.prepare('SELECT * FROM buying_triggers WHERE account_id = ? ORDER BY created_at DESC').all(accountId);
+}
+
+function addTrigger({ account_id, tag, category, notes }) {
+  var result = db.prepare('INSERT INTO buying_triggers (account_id, tag, category, notes) VALUES (?, ?, ?, ?)').run(account_id, tag, category, notes || '');
+  return db.prepare('SELECT * FROM buying_triggers WHERE id = ?').get(result.lastInsertRowid);
+}
+
 module.exports = {
   db,
   getAccounts,
@@ -475,5 +564,12 @@ module.exports = {
   addOutreachEntry,
   updateContactAI,
   getActivity,
-  addActivity
+  addActivity,
+  getIntel,
+  addIntel,
+  getStrategy,
+  upsertStrategy,
+  updateStrategyContent,
+  getTriggers,
+  addTrigger
 };
