@@ -548,6 +548,188 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 .activity-empty h3 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
 .activity-empty p { font-size: 13px; }
 
+/* Strategy Tab */
+.strategy-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.strategy-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.strategy-card-header h3 {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+.strategy-badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.strategy-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.strategy-badge.ai {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.2);
+  color: #3B82F6;
+}
+.strategy-badge.edited {
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.2);
+  color: #F59E0B;
+}
+.strategy-content {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.strategy-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+.strategy-actions button {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.strategy-actions button.primary {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: white;
+}
+.strategy-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.strategy-edit-area {
+  width: 100%;
+  min-height: 200px;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  resize: vertical;
+}
+.strategy-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.strategy-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Private Intel */
+.intel-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.intel-form textarea {
+  flex: 1;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  resize: vertical;
+  min-height: 60px;
+}
+.intel-form textarea:focus {
+  border-color: #3B82F6;
+  outline: none;
+}
+.intel-form button {
+  padding: 10px 16px;
+  background: #3B82F6;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.intel-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.intel-note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+.intel-note-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.intel-label {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.2);
+  color: #EF4444;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.intel-date {
+  font-size: 11px;
+  color: var(--muted);
+}
+.intel-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.intel-section-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  margin-top: 20px;
+}
+
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .g2,.g3,.g4 { grid-template-columns: 1fr; }
@@ -807,6 +989,7 @@ function renderAccountPanel(account) {
   html += '<button class="acct-tab active" onclick="showTab(\'' + id + '\',\'overview\',this)">Overview</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'contacts\',this)">Contacts</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'activity\',this)">Activity</button>';
+  html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'strategy\',this)">Strategy</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'ai\',this)">Ask AI</button>';
   html += '</div>';
 
@@ -822,6 +1005,8 @@ function renderAccountPanel(account) {
   html += '<div class="tab-pane" id="' + id + '-activity">';
   html += '<div id="' + id + '-activity-panel"></div>';
   html += '</div>';
+  // Strategy tab
+  html += '<div class="tab-pane" id="' + id + '-strategy"><div id="' + id + '-strategy-panel"></div></div>';
   // AI tab
   html += '<div class="tab-pane" id="' + id + '-ai"><div id="' + id + '-ai-panel"></div></div>';
   html += '</div>';
@@ -885,6 +1070,13 @@ function showTab(account, tab, btn) {
     if (activityPanel && !activityPanel.dataset.loaded) {
       activityPanel.dataset.loaded = '1';
       loadActivity(account);
+    }
+  }
+  if (tab === 'strategy') {
+    var strategyPanel = document.getElementById(account + '-strategy-panel');
+    if (strategyPanel && !strategyPanel.dataset.loaded) {
+      strategyPanel.dataset.loaded = '1';
+      loadStrategyTab(account);
     }
   }
 }
@@ -1724,6 +1916,262 @@ function submitOutreach(contactId) {
       if (errorEl) { errorEl.textContent = "Couldn't save. Check your connection and try again."; errorEl.style.display = 'block'; }
       if (saveBtn) { saveBtn.textContent = 'Log Outreach'; saveBtn.disabled = false; }
     });
+}
+
+// ---- Strategy Tab ----
+
+var strategyCache = {};
+
+function loadStrategyTab(accountId) {
+  var panel = document.getElementById(accountId + '-strategy-panel');
+  if (!panel) return;
+  var safeId = escapeHtml(accountId);
+
+  var html = '';
+  // Strategy summary card section
+  html += '<div id="' + safeId + '-strategy-card"><div class="strategy-loading">Loading strategy...</div></div>';
+  // Divider
+  html += '<hr style="border:none;border-top:1px solid var(--border);margin:20px 0">';
+  // Private Intel section
+  html += '<div class="intel-section-title">Private Intel</div>';
+  // Intel form
+  html += '<div class="intel-form">';
+  html += '<textarea id="' + safeId + '-intel-input" placeholder="Add a private intel note..."></textarea>';
+  html += '<button id="' + safeId + '-intel-btn" onclick="submitIntel(\'' + safeId + '\')">Add Note</button>';
+  html += '</div>';
+  // Intel notes list
+  html += '<div id="' + safeId + '-intel-list"><div class="strategy-loading">Loading notes...</div></div>';
+  // Placeholder for triggers section (Plan 03)
+  html += '<div id="' + safeId + '-triggers-section"></div>';
+
+  panel.innerHTML = html;
+  loadStrategy(accountId);
+  loadIntel(accountId);
+}
+
+function loadStrategy(accountId) {
+  var cardEl = document.getElementById(accountId + '-strategy-card');
+  if (!cardEl) return;
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/strategy')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.content) {
+        strategyCache[accountId] = data;
+        renderStrategy(accountId, data);
+      } else {
+        // Auto-generate if no strategy exists (D-10)
+        // Guard against race condition (RESEARCH.md pitfall 4)
+        if (cardEl.dataset.generating) return;
+        cardEl.dataset.generating = '1';
+        cardEl.innerHTML = '<div class="strategy-loading">Generating strategy...</div>';
+        generateStrategy(accountId);
+      }
+    })
+    .catch(function() {
+      if (cardEl) cardEl.innerHTML = '<div class="strategy-empty">Failed to load strategy. Reload and try again.</div>';
+    });
+}
+
+function renderStrategy(accountId, strategy) {
+  var cardEl = document.getElementById(accountId + '-strategy-card');
+  if (!cardEl) return;
+  strategyCache[accountId] = strategy;
+  var safeId = escapeHtml(accountId);
+
+  var html = '<div class="strategy-card">';
+  html += '<div class="strategy-card-header">';
+  html += '<h3>Strategy Summary</h3>';
+  html += '<div class="strategy-badges">';
+  html += '<span class="strategy-badge ai">AI-Generated</span>';
+  if (strategy.is_edited === 1) {
+    html += '<span class="strategy-badge edited">Edited</span>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Date info
+  var dateInfo = '';
+  if (strategy.generated_at) {
+    dateInfo += 'Generated ' + formatActivityDate(strategy.generated_at);
+  }
+  if (strategy.edited_at) {
+    dateInfo += ' &middot; Edited ' + formatActivityDate(strategy.edited_at);
+  }
+  if (dateInfo) {
+    html += '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">' + dateInfo + '</div>';
+  }
+
+  // Content
+  html += '<div class="strategy-content" id="' + safeId + '-strategy-text">' + escapeHtml(strategy.content).replace(/\n/g, '<br>') + '</div>';
+
+  // Action buttons
+  html += '<div class="strategy-actions" id="' + safeId + '-strategy-actions">';
+  html += '<button onclick="editStrategy(\'' + safeId + '\')">Edit</button>';
+  html += '<button onclick="regenerateStrategy(\'' + safeId + '\')">Regenerate Strategy</button>';
+  html += '</div>';
+
+  html += '</div>';
+  cardEl.innerHTML = html;
+}
+
+function generateStrategy(accountId) {
+  var cardEl = document.getElementById(accountId + '-strategy-card');
+  if (cardEl && !cardEl.querySelector('.strategy-loading')) {
+    cardEl.innerHTML = '<div class="strategy-loading">Generating strategy...</div>';
+  }
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/strategy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(data) {
+      if (cardEl) delete cardEl.dataset.generating;
+      strategyCache[accountId] = data;
+      renderStrategy(accountId, data);
+    })
+    .catch(function() {
+      if (cardEl) {
+        delete cardEl.dataset.generating;
+        cardEl.innerHTML = '<div class="strategy-empty">Failed to generate strategy. <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline" onclick="generateStrategy(\'' + escapeHtml(accountId) + '\')">Try again</button></div>';
+      }
+    });
+}
+
+function editStrategy(accountId) {
+  var cached = strategyCache[accountId];
+  if (!cached) return;
+
+  var textEl = document.getElementById(accountId + '-strategy-text');
+  var actionsEl = document.getElementById(accountId + '-strategy-actions');
+  if (!textEl || !actionsEl) return;
+
+  // Replace content with textarea pre-filled with current text (unescaped)
+  textEl.outerHTML = '<textarea class="strategy-edit-area" id="' + escapeHtml(accountId) + '-strategy-textarea">' + escapeHtml(cached.content) + '</textarea>';
+
+  // Replace action buttons with Save + Cancel
+  actionsEl.innerHTML = '<button class="primary" onclick="saveStrategyEdit(\'' + escapeHtml(accountId) + '\')">Save</button>' +
+    '<button onclick="cancelStrategyEdit(\'' + escapeHtml(accountId) + '\')">Cancel</button>';
+}
+
+function saveStrategyEdit(accountId) {
+  var textarea = document.getElementById(accountId + '-strategy-textarea');
+  if (!textarea) return;
+  var content = textarea.value.trim();
+  if (!content) return;
+
+  var actionsEl = document.getElementById(accountId + '-strategy-actions');
+  if (actionsEl) {
+    var saveBtn = actionsEl.querySelector('button.primary');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+  }
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/strategy', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: content })
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(data) {
+      strategyCache[accountId] = data;
+      renderStrategy(accountId, data);
+    })
+    .catch(function() {
+      if (actionsEl) {
+        var saveBtn = actionsEl.querySelector('button.primary');
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+      }
+    });
+}
+
+function cancelStrategyEdit(accountId) {
+  var cached = strategyCache[accountId];
+  if (!cached) return;
+  renderStrategy(accountId, cached);
+}
+
+function regenerateStrategy(accountId) {
+  var cached = strategyCache[accountId];
+  if (cached && cached.is_edited === 1) {
+    if (!confirm('This will replace your edits. Continue?')) return;
+  }
+  generateStrategy(accountId);
+}
+
+function submitIntel(accountId) {
+  var inputEl = document.getElementById(accountId + '-intel-input');
+  var btn = document.getElementById(accountId + '-intel-btn');
+  if (!inputEl) return;
+  var content = inputEl.value.trim();
+  if (!content) return;
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/intel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: content })
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(note) {
+      if (inputEl) inputEl.value = '';
+      if (btn) { btn.disabled = false; btn.textContent = 'Add Note'; }
+
+      // Prepend new note to list (reverse-chronological)
+      var listEl = document.getElementById(accountId + '-intel-list');
+      if (listEl) {
+        var emptyMsg = listEl.querySelector('.strategy-empty');
+        if (emptyMsg) emptyMsg.remove();
+        var noteHtml = renderIntelNote(note);
+        listEl.insertAdjacentHTML('afterbegin', noteHtml);
+      }
+    })
+    .catch(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Add Note'; }
+    });
+}
+
+function loadIntel(accountId) {
+  var listEl = document.getElementById(accountId + '-intel-list');
+  if (!listEl) return;
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/intel')
+    .then(function(r) { return r.json(); })
+    .then(function(notes) {
+      if (!notes || notes.length === 0) {
+        listEl.innerHTML = '<div class="strategy-empty">No private intel notes yet.</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < notes.length; i++) {
+        html += renderIntelNote(notes[i]);
+      }
+      listEl.innerHTML = html;
+    })
+    .catch(function() {
+      if (listEl) listEl.innerHTML = '<div class="strategy-empty">Failed to load notes.</div>';
+    });
+}
+
+function renderIntelNote(note) {
+  var html = '<div class="intel-note">';
+  html += '<div class="intel-note-header">';
+  html += '<span class="intel-label">Internal</span>';
+  html += '<span class="intel-date">' + escapeHtml(formatActivityDate(note.created_at)) + '</span>';
+  html += '</div>';
+  html += '<div class="intel-text">' + escapeHtml(note.content).replace(/\n/g, '<br>') + '</div>';
+  html += '</div>';
+  return html;
 }
 
 // ---- Activity Tab ----
