@@ -71,9 +71,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Database schema v3 (activity_log table) and activity API routes (GET/POST)
-- [ ] 03-02-PLAN.md — Activity tab UI: timeline rendering, manual entry form, tab integration
-- [ ] 03-03-PLAN.md — AI debrief extraction endpoint, review panel with approve/edit/reject controls
+- [x] 03-01-PLAN.md — Database schema v3 (activity_log table) and activity API routes (GET/POST)
+- [x] 03-02-PLAN.md — Activity tab UI: timeline rendering, manual entry form, tab integration
+- [x] 03-03-PLAN.md — AI debrief extraction endpoint, review panel with approve/edit/reject controls
 
 **UI hint**: yes
 
