@@ -485,6 +485,45 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 .activity-form-btn:hover { background: #2563EB; }
 .activity-form-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .debrief-area { margin-bottom: 20px; }
+.debrief-textarea { width: 100%; min-height: 120px; resize: vertical; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; color: var(--text); font-family: var(--font); line-height: 1.5; }
+.debrief-textarea:focus { border-color: var(--accent); outline: none; }
+.debrief-char-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.debrief-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.debrief-extract-btn { background: #7C3AED; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; color: white; cursor: pointer; font-family: var(--font); }
+.debrief-extract-btn:hover { background: #6D28D9; }
+.debrief-extract-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.debrief-status { font-size: 12px; margin-top: 8px; }
+.debrief-status.error { color: var(--red); }
+.debrief-status.info { color: var(--muted); }
+.debrief-loading { color: #7C3AED; font-style: italic; }
+.review-panel { margin-top: 16px; }
+.review-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 10px 14px; background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); border-radius: 8px; }
+.review-header-title { font-size: 14px; font-weight: 500; color: var(--text); }
+.review-header-btn { background: #22C55E; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: white; cursor: pointer; font-family: var(--font); }
+.review-header-btn:hover { background: #16A34A; }
+.review-header-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.proposal-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+.proposal-card-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.proposal-type-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-weight: 500; text-transform: capitalize; }
+.proposal-type-badge[data-type="meeting"] { background: rgba(59,130,246,0.15); color: #3B82F6; }
+.proposal-type-badge[data-type="call"] { background: rgba(34,197,94,0.15); color: #22C55E; }
+.proposal-type-badge[data-type="email"] { background: rgba(245,158,11,0.15); color: #F59E0B; }
+.proposal-type-badge[data-type="note"] { background: rgba(148,163,184,0.15); color: #94A3B8; }
+.proposal-type-badge[data-type="other"] { background: rgba(167,139,250,0.15); color: #A78BFA; }
+.proposal-field { margin-bottom: 8px; }
+.proposal-field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+.proposal-field input, .proposal-field textarea, .proposal-field select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; color: var(--text); font-family: var(--font); }
+.proposal-field textarea { min-height: 60px; resize: vertical; line-height: 1.5; }
+.proposal-field select { cursor: pointer; }
+.proposal-actions { display: flex; gap: 8px; margin-top: 10px; }
+.btn-approve { background: #22C55E; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: white; cursor: pointer; font-family: var(--font); }
+.btn-approve:hover { background: #16A34A; }
+.btn-reject { background: transparent; border: 1px solid var(--red); border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: var(--red); cursor: pointer; font-family: var(--font); }
+.btn-reject:hover { background: rgba(239,68,68,0.1); }
+.contact-proposal-card { background: var(--card); border: 1px solid rgba(124,58,237,0.3); border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; }
+.contact-proposal-card .proposal-card-hdr { color: #A78BFA; }
+.contact-proposal-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-weight: 500; background: rgba(124,58,237,0.15); color: #7C3AED; text-transform: capitalize; }
+.review-progress { font-size: 12px; color: var(--muted); font-style: italic; margin-top: 6px; }
 .activity-timeline { display: flex; flex-direction: column; gap: 12px; }
 .activity-entry { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; border-left: 3px solid var(--muted); }
 .activity-entry[data-type="meeting"] { border-left-color: #3B82F6; }
@@ -1733,8 +1772,17 @@ function loadActivity(accountId) {
       html += '</div>';
       html += '</div>';
 
-      // Debrief area placeholder for Plan 03
-      html += '<div class="debrief-area" id="' + safeId + '-debrief-area"></div>';
+      // AI debrief extraction area
+      html += '<div class="debrief-area" id="' + safeId + '-debrief-area">';
+      html += '<div style="font-size:14px;font-weight:500;margin-bottom:6px">AI Debrief Extraction</div>';
+      html += '<textarea class="debrief-textarea" id="' + safeId + '-debrief-text" placeholder="Paste your meeting notes, call summary, or debrief here... Describe what happened, who was there, what was discussed, and any next steps." maxlength="10000" oninput="updateDebriefBtn(\'' + safeId + '\')"></textarea>';
+      html += '<div class="debrief-char-hint">Recommended: 100 to 5,000 characters</div>';
+      html += '<div class="debrief-actions">';
+      html += '<button class="debrief-extract-btn" id="' + safeId + '-debrief-btn" disabled onclick="extractDebrief(\'' + safeId + '\')">Extract with AI</button>';
+      html += '</div>';
+      html += '<div class="debrief-status" id="' + safeId + '-debrief-status"></div>';
+      html += '<div id="' + safeId + '-review-panel"></div>';
+      html += '</div>';
 
       // Timeline
       html += '<div id="' + safeId + '-activity-timeline">';
@@ -1856,6 +1904,453 @@ function submitActivity(accountId) {
       if (errorEl) { errorEl.textContent = "Couldn't save. Check your connection and try again."; errorEl.classList.add('show'); }
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Log Entry'; }
     });
+}
+
+// ---- AI Debrief Extraction (Plan 03) ----
+
+var pendingProposals = {};
+var debriefOriginalText = {};
+
+function updateDebriefBtn(accountId) {
+  var textEl = document.getElementById(accountId + '-debrief-text');
+  var btn = document.getElementById(accountId + '-debrief-btn');
+  if (!textEl || !btn) return;
+  btn.disabled = textEl.value.trim().length < 50;
+}
+
+function extractDebrief(accountId) {
+  var textEl = document.getElementById(accountId + '-debrief-text');
+  var btn = document.getElementById(accountId + '-debrief-btn');
+  var statusEl = document.getElementById(accountId + '-debrief-status');
+  if (!textEl) return;
+
+  var debriefText = textEl.value.trim();
+  if (debriefText.length < 50) {
+    if (statusEl) { statusEl.className = 'debrief-status error'; statusEl.textContent = 'Please enter at least 50 characters.'; }
+    return;
+  }
+
+  // Show loading state
+  if (btn) { btn.disabled = true; btn.textContent = 'Analyzing debrief...'; }
+  if (statusEl) { statusEl.className = 'debrief-status debrief-loading'; statusEl.textContent = 'AI is extracting structured entries from your debrief...'; }
+
+  debriefOriginalText[accountId] = debriefText;
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/debrief', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: debriefText })
+  })
+    .then(function(r) {
+      if (r.status === 422) {
+        return r.json().then(function(data) {
+          if (statusEl) {
+            statusEl.className = 'debrief-status error';
+            statusEl.textContent = 'AI response could not be parsed. Please try again or log entries manually.';
+            if (data.raw) {
+              statusEl.textContent += '\n\nRaw AI response:\n' + data.raw;
+            }
+          }
+          throw new Error('parse_failure');
+        });
+      }
+      if (!r.ok) throw new Error('Server error ' + r.status);
+      return r.json();
+    })
+    .then(function(proposals) {
+      if (statusEl) { statusEl.className = 'debrief-status'; statusEl.textContent = ''; }
+      pendingProposals[accountId] = proposals;
+      renderProposals(accountId);
+    })
+    .catch(function(err) {
+      if (err.message !== 'parse_failure') {
+        if (statusEl) { statusEl.className = 'debrief-status error'; statusEl.textContent = 'Something went wrong. Please try again.'; }
+      }
+    })
+    .finally(function() {
+      if (btn) { btn.disabled = false; btn.textContent = 'Extract with AI'; }
+      updateDebriefBtn(accountId);
+    });
+}
+
+function renderProposals(accountId) {
+  var panelEl = document.getElementById(accountId + '-review-panel');
+  if (!panelEl) return;
+  var proposals = pendingProposals[accountId];
+  if (!proposals) { panelEl.innerHTML = ''; return; }
+
+  var activities = proposals.activities || [];
+  var contactUpdates = proposals.contact_updates || [];
+  if (activities.length === 0 && contactUpdates.length === 0) {
+    panelEl.innerHTML = '<div class="debrief-status info">No entries extracted. Try providing more detail in your debrief.</div>';
+    return;
+  }
+
+  var html = '<div class="review-panel">';
+
+  // Activity proposals
+  if (activities.length > 0) {
+    html += '<div class="review-header">';
+    html += '<span class="review-header-title">' + activities.length + ' activity ' + (activities.length === 1 ? 'entry' : 'entries') + ' extracted</span>';
+    html += '<button class="review-header-btn" id="' + escapeHtml(accountId) + '-approve-all" onclick="approveAll(\'' + escapeHtml(accountId) + '\')">Approve All</button>';
+    html += '</div>';
+    html += '<div id="' + escapeHtml(accountId) + '-approve-progress" class="review-progress" style="display:none"></div>';
+
+    for (var i = 0; i < activities.length; i++) {
+      var a = activities[i];
+      var safeType = escapeHtml(a.type || 'other');
+      html += '<div class="proposal-card" id="' + escapeHtml(accountId) + '-proposal-' + i + '">';
+      html += '<div class="proposal-card-hdr">';
+      html += '<span class="proposal-type-badge" data-type="' + safeType + '">' + safeType + '</span>';
+      if (a.date) html += '<span style="font-size:12px;color:var(--muted)">' + escapeHtml(a.date) + '</span>';
+      html += '</div>';
+
+      html += '<div class="proposal-field"><label>Type</label>';
+      html += '<select id="' + escapeHtml(accountId) + '-proposal-type-' + i + '">';
+      var types = ['meeting', 'call', 'email', 'note', 'other'];
+      for (var t = 0; t < types.length; t++) {
+        html += '<option value="' + types[t] + '"' + ((a.type || 'other') === types[t] ? ' selected' : '') + '>' + types[t].charAt(0).toUpperCase() + types[t].slice(1) + '</option>';
+      }
+      html += '</select></div>';
+
+      html += '<div class="proposal-field"><label>Date</label>';
+      html += '<input type="date" id="' + escapeHtml(accountId) + '-proposal-date-' + i + '" value="' + escapeHtml(a.date || '') + '" /></div>';
+
+      html += '<div class="proposal-field"><label>Participants</label>';
+      html += '<input type="text" id="' + escapeHtml(accountId) + '-proposal-participants-' + i + '" value="' + escapeHtml(a.participants || '') + '" /></div>';
+
+      var summaryText = escapeHtml(a.summary || '');
+      if (a.action_items) summaryText += '\n\nAction items: ' + escapeHtml(a.action_items);
+      html += '<div class="proposal-field"><label>Summary</label>';
+      html += '<textarea id="' + escapeHtml(accountId) + '-proposal-summary-' + i + '">' + summaryText + '</textarea></div>';
+
+      html += '<div class="proposal-actions">';
+      html += '<button class="btn-approve" onclick="approveEntry(\'' + escapeHtml(accountId) + '\', ' + i + ')">Approve</button>';
+      html += '<button class="btn-reject" onclick="rejectEntry(\'' + escapeHtml(accountId) + '\', ' + i + ')">Reject</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+  }
+
+  // Contact update proposals
+  if (contactUpdates.length > 0) {
+    html += '<div style="font-size:14px;font-weight:500;margin:16px 0 8px">Contact Updates</div>';
+    for (var c = 0; c < contactUpdates.length; c++) {
+      var cu = contactUpdates[c];
+      html += '<div class="contact-proposal-card" id="' + escapeHtml(accountId) + '-contact-proposal-' + c + '">';
+      html += '<div class="proposal-card-hdr">';
+      html += '<span class="contact-proposal-badge">' + escapeHtml(cu.action || 'new') + '</span>';
+      html += '<span style="font-size:13px;font-weight:500">' + escapeHtml(cu.name || '') + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:13px;color:var(--muted);margin-bottom:4px">' + escapeHtml(cu.title || '') + ' / ' + escapeHtml(cu.influence || '') + '</div>';
+      if (cu.changes) {
+        html += '<div style="font-size:12px;color:var(--text);margin-bottom:8px">Changes: ' + escapeHtml(cu.changes) + '</div>';
+      }
+      html += '<div class="proposal-actions">';
+      html += '<button class="btn-approve" onclick="approveContactUpdate(\'' + escapeHtml(accountId) + '\', ' + c + ')">Approve</button>';
+      html += '<button class="btn-reject" onclick="rejectContactUpdate(\'' + escapeHtml(accountId) + '\', ' + c + ')">Reject</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+  panelEl.innerHTML = html;
+}
+
+function approveEntry(accountId, index) {
+  var proposals = pendingProposals[accountId];
+  if (!proposals || !proposals.activities || !proposals.activities[index]) return;
+
+  var typeEl = document.getElementById(accountId + '-proposal-type-' + index);
+  var participantsEl = document.getElementById(accountId + '-proposal-participants-' + index);
+  var summaryEl = document.getElementById(accountId + '-proposal-summary-' + index);
+  var cardEl = document.getElementById(accountId + '-proposal-' + index);
+
+  var type = typeEl ? typeEl.value : (proposals.activities[index].type || 'other');
+  var participants = participantsEl ? participantsEl.value : (proposals.activities[index].participants || '');
+  var summary = summaryEl ? summaryEl.value : (proposals.activities[index].summary || '');
+
+  if (!summary.trim()) {
+    if (cardEl) { var err = document.createElement('div'); err.style.cssText = 'color:var(--red);font-size:12px;margin-top:4px'; err.textContent = 'Summary cannot be empty.'; cardEl.appendChild(err); }
+    return;
+  }
+
+  // Disable approve button
+  var approveBtn = cardEl ? cardEl.querySelector('.btn-approve') : null;
+  if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = 'Saving...'; }
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/activity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type: type,
+      participants: participants,
+      summary: summary,
+      source: 'ai_debrief',
+      ai_raw: debriefOriginalText[accountId] || ''
+    })
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(entry) {
+      // Remove card from DOM
+      if (cardEl) cardEl.remove();
+      // Remove from pending
+      proposals.activities[index] = null;
+
+      // Prepend to timeline
+      var timelineEl = document.getElementById(accountId + '-activity-timeline');
+      if (timelineEl) {
+        var existingTimeline = timelineEl.querySelector('.activity-timeline');
+        var emptyState = timelineEl.querySelector('.activity-empty');
+        if (emptyState) {
+          timelineEl.innerHTML = renderActivityTimeline(accountId, [entry]);
+        } else if (existingTimeline) {
+          var safeType = escapeHtml(entry.type || 'other');
+          var entryHtml = '<div class="activity-entry" data-type="' + safeType + '">';
+          entryHtml += '<div class="activity-entry-hdr">';
+          entryHtml += '<span class="activity-type" data-type="' + safeType + '">' + safeType + '</span>';
+          entryHtml += '<span class="activity-ai-badge">AI</span>';
+          entryHtml += '<span class="activity-meta">' + escapeHtml(formatActivityDate(entry.created_at)) + '</span>';
+          entryHtml += '</div>';
+          if (entry.participants && entry.participants.trim()) {
+            entryHtml += '<div class="activity-participants">' + escapeHtml(entry.participants) + '</div>';
+          }
+          entryHtml += '<div class="activity-summary">' + escapeHtml(entry.summary).replace(/\n/g, '<br>') + '</div>';
+          entryHtml += '</div>';
+          existingTimeline.insertAdjacentHTML('afterbegin', entryHtml);
+        } else {
+          timelineEl.innerHTML = renderActivityTimeline(accountId, [entry]);
+        }
+      }
+
+      // Check if all proposals handled
+      checkReviewPanelEmpty(accountId);
+    })
+    .catch(function() {
+      if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'Approve'; }
+      if (cardEl) { var err = document.createElement('div'); err.style.cssText = 'color:var(--red);font-size:12px;margin-top:4px'; err.textContent = 'Failed to save. Try again.'; cardEl.appendChild(err); }
+    });
+}
+
+function rejectEntry(accountId, index) {
+  var proposals = pendingProposals[accountId];
+  if (!proposals || !proposals.activities) return;
+
+  var cardEl = document.getElementById(accountId + '-proposal-' + index);
+  if (cardEl) cardEl.remove();
+  proposals.activities[index] = null;
+
+  checkReviewPanelEmpty(accountId);
+}
+
+function approveAll(accountId) {
+  var proposals = pendingProposals[accountId];
+  if (!proposals || !proposals.activities) return;
+
+  var remaining = [];
+  for (var i = 0; i < proposals.activities.length; i++) {
+    if (proposals.activities[i] !== null) remaining.push(i);
+  }
+  if (remaining.length === 0) return;
+
+  var approveAllBtn = document.getElementById(accountId + '-approve-all');
+  var progressEl = document.getElementById(accountId + '-approve-progress');
+  if (approveAllBtn) { approveAllBtn.disabled = true; }
+  if (progressEl) progressEl.style.display = 'block';
+
+  var current = 0;
+
+  function processNext() {
+    if (current >= remaining.length) {
+      if (progressEl) progressEl.style.display = 'none';
+      checkReviewPanelEmpty(accountId);
+      return;
+    }
+
+    var idx = remaining[current];
+    if (progressEl) progressEl.textContent = 'Saving ' + (current + 1) + ' of ' + remaining.length + '...';
+
+    var typeEl = document.getElementById(accountId + '-proposal-type-' + idx);
+    var participantsEl = document.getElementById(accountId + '-proposal-participants-' + idx);
+    var summaryEl = document.getElementById(accountId + '-proposal-summary-' + idx);
+    var cardEl = document.getElementById(accountId + '-proposal-' + idx);
+
+    var entry = proposals.activities[idx];
+    var type = typeEl ? typeEl.value : (entry.type || 'other');
+    var participants = participantsEl ? participantsEl.value : (entry.participants || '');
+    var summary = summaryEl ? summaryEl.value : (entry.summary || '');
+
+    fetch('/api/accounts/' + encodeURIComponent(accountId) + '/activity', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: type,
+        participants: participants,
+        summary: summary,
+        source: 'ai_debrief',
+        ai_raw: debriefOriginalText[accountId] || ''
+      })
+    })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Server error');
+        return r.json();
+      })
+      .then(function(saved) {
+        if (cardEl) cardEl.remove();
+        proposals.activities[idx] = null;
+
+        // Prepend to timeline
+        var timelineEl = document.getElementById(accountId + '-activity-timeline');
+        if (timelineEl) {
+          var existingTimeline = timelineEl.querySelector('.activity-timeline');
+          var emptyState = timelineEl.querySelector('.activity-empty');
+          if (emptyState) {
+            timelineEl.innerHTML = renderActivityTimeline(accountId, [saved]);
+          } else if (existingTimeline) {
+            var safeType = escapeHtml(saved.type || 'other');
+            var entryHtml = '<div class="activity-entry" data-type="' + safeType + '">';
+            entryHtml += '<div class="activity-entry-hdr">';
+            entryHtml += '<span class="activity-type" data-type="' + safeType + '">' + safeType + '</span>';
+            entryHtml += '<span class="activity-ai-badge">AI</span>';
+            entryHtml += '<span class="activity-meta">' + escapeHtml(formatActivityDate(saved.created_at)) + '</span>';
+            entryHtml += '</div>';
+            if (saved.participants && saved.participants.trim()) {
+              entryHtml += '<div class="activity-participants">' + escapeHtml(saved.participants) + '</div>';
+            }
+            entryHtml += '<div class="activity-summary">' + escapeHtml(saved.summary).replace(/\n/g, '<br>') + '</div>';
+            entryHtml += '</div>';
+            existingTimeline.insertAdjacentHTML('afterbegin', entryHtml);
+          }
+        }
+
+        current++;
+        processNext();
+      })
+      .catch(function() {
+        if (progressEl) progressEl.textContent = 'Failed on entry ' + (current + 1) + '. ' + current + ' of ' + remaining.length + ' saved.';
+        if (approveAllBtn) approveAllBtn.disabled = false;
+      });
+  }
+
+  processNext();
+}
+
+function approveContactUpdate(accountId, index) {
+  var proposals = pendingProposals[accountId];
+  if (!proposals || !proposals.contact_updates || !proposals.contact_updates[index]) return;
+
+  var cu = proposals.contact_updates[index];
+  var cardEl = document.getElementById(accountId + '-contact-proposal-' + index);
+  var approveBtn = cardEl ? cardEl.querySelector('.btn-approve') : null;
+  if (approveBtn) { approveBtn.disabled = true; approveBtn.textContent = 'Saving...'; }
+
+  if (cu.action === 'new') {
+    fetch('/api/accounts/' + encodeURIComponent(accountId) + '/contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: cu.name || '',
+        title: cu.title || '',
+        influence: cu.influence || 'Evaluator'
+      })
+    })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Server error');
+        return r.json();
+      })
+      .then(function() {
+        if (cardEl) cardEl.remove();
+        proposals.contact_updates[index] = null;
+        checkReviewPanelEmpty(accountId);
+      })
+      .catch(function() {
+        if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'Approve'; }
+        if (cardEl) { var err = document.createElement('div'); err.style.cssText = 'color:var(--red);font-size:12px;margin-top:4px'; err.textContent = 'Failed to save contact. Try again.'; cardEl.appendChild(err); }
+      });
+  } else if (cu.action === 'update') {
+    // Look up contact by name
+    fetch('/api/accounts/' + encodeURIComponent(accountId) + '/contacts')
+      .then(function(r) { return r.json(); })
+      .then(function(contacts) {
+        var match = null;
+        var cuNameLower = (cu.name || '').toLowerCase();
+        for (var i = 0; i < contacts.length; i++) {
+          if (contacts[i].name.toLowerCase() === cuNameLower) { match = contacts[i]; break; }
+        }
+        if (!match) {
+          // If no match found, create as new contact instead
+          return fetch('/api/accounts/' + encodeURIComponent(accountId) + '/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: cu.name || '',
+              title: cu.title || '',
+              influence: cu.influence || 'Evaluator'
+            })
+          });
+        }
+        var updateData = {};
+        if (cu.title) updateData.title = cu.title;
+        if (cu.influence) updateData.influence = cu.influence;
+        return fetch('/api/contacts/' + match.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        });
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Server error');
+        return r.json();
+      })
+      .then(function() {
+        if (cardEl) cardEl.remove();
+        proposals.contact_updates[index] = null;
+        checkReviewPanelEmpty(accountId);
+      })
+      .catch(function() {
+        if (approveBtn) { approveBtn.disabled = false; approveBtn.textContent = 'Approve'; }
+        if (cardEl) { var err = document.createElement('div'); err.style.cssText = 'color:var(--red);font-size:12px;margin-top:4px'; err.textContent = 'Failed to update contact. Try again.'; cardEl.appendChild(err); }
+      });
+  }
+}
+
+function rejectContactUpdate(accountId, index) {
+  var proposals = pendingProposals[accountId];
+  if (!proposals || !proposals.contact_updates) return;
+
+  var cardEl = document.getElementById(accountId + '-contact-proposal-' + index);
+  if (cardEl) cardEl.remove();
+  proposals.contact_updates[index] = null;
+
+  checkReviewPanelEmpty(accountId);
+}
+
+function checkReviewPanelEmpty(accountId) {
+  var proposals = pendingProposals[accountId];
+  if (!proposals) return;
+
+  var hasActivity = false;
+  if (proposals.activities) {
+    for (var i = 0; i < proposals.activities.length; i++) {
+      if (proposals.activities[i] !== null) { hasActivity = true; break; }
+    }
+  }
+  var hasContacts = false;
+  if (proposals.contact_updates) {
+    for (var j = 0; j < proposals.contact_updates.length; j++) {
+      if (proposals.contact_updates[j] !== null) { hasContacts = true; break; }
+    }
+  }
+
+  if (!hasActivity && !hasContacts) {
+    var panelEl = document.getElementById(accountId + '-review-panel');
+    if (panelEl) panelEl.innerHTML = '';
+    pendingProposals[accountId] = null;
+  }
 }
 
 // ---- Init ----
