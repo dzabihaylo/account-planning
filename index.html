@@ -730,6 +730,124 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   margin-top: 20px;
 }
 
+/* Buying Triggers */
+.triggers-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.trigger-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.trigger-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: default;
+}
+.trigger-badge .trigger-cat {
+  font-size: 10px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.trigger-badge.cat-cto-change { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); color: #3B82F6; }
+.trigger-badge.cat-cost-cuts { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; }
+.trigger-badge.cat-failed-vendor { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #F59E0B; }
+.trigger-badge.cat-reorg { background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.2); color: #A78BFA; }
+.trigger-badge.cat-m-a { background: rgba(20,184,166,0.1); border: 1px solid rgba(20,184,166,0.2); color: #14B8A6; }
+.trigger-badge.cat-digital-initiative { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); color: #22C55E; }
+.trigger-badge.cat-custom { background: rgba(124,141,181,0.1); border: 1px solid rgba(124,141,181,0.2); color: #7C8DB5; }
+
+.trigger-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: none;
+}
+.trigger-form.show { display: block; }
+.trigger-form-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+.trigger-form select,
+.trigger-form input {
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+.trigger-form select { min-width: 160px; }
+.trigger-form input { flex: 1; }
+.trigger-form textarea {
+  width: 100%;
+  background: var(--dark);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  resize: vertical;
+  min-height: 40px;
+  box-sizing: border-box;
+}
+.trigger-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.trigger-form-actions button {
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+.trigger-form-actions button.primary {
+  background: #3B82F6;
+  border-color: #3B82F6;
+  color: white;
+}
+
+/* Activity timeline trigger entry */
+.activity-trigger {
+  border-left: 3px solid #F59E0B;
+}
+.activity-trigger-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .g2,.g3,.g4 { grid-template-columns: 1fr; }
@@ -1947,6 +2065,7 @@ function loadStrategyTab(accountId) {
   panel.innerHTML = html;
   loadStrategy(accountId);
   loadIntel(accountId);
+  loadTriggers(accountId);
 }
 
 function loadStrategy(accountId) {
@@ -2172,6 +2291,142 @@ function renderIntelNote(note) {
   html += '<div class="intel-text">' + escapeHtml(note.content).replace(/\n/g, '<br>') + '</div>';
   html += '</div>';
   return html;
+}
+
+// ---- Buying Triggers ----
+
+var CATEGORY_CLASS_MAP = {
+  'CTO Change': 'cat-cto-change',
+  'Cost Cuts': 'cat-cost-cuts',
+  'Failed Vendor': 'cat-failed-vendor',
+  'Reorg': 'cat-reorg',
+  'M&A': 'cat-m-a',
+  'Digital Initiative': 'cat-digital-initiative',
+  'Custom': 'cat-custom'
+};
+
+function getCategoryClass(category) {
+  return CATEGORY_CLASS_MAP[category] || 'cat-custom';
+}
+
+function loadTriggers(accountId) {
+  var section = document.getElementById(accountId + '-triggers-section');
+  if (!section) return;
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/triggers')
+    .then(function(r) { return r.json(); })
+    .then(function(triggers) {
+      var safeId = escapeHtml(accountId);
+      var html = '';
+      html += '<hr style="border:none;border-top:1px solid var(--border);margin:20px 0">';
+      html += '<div class="triggers-title">';
+      html += '<span>Buying Triggers</span>';
+      html += '<button style="font-size:11px;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--accent);cursor:pointer;font-family:\'DM Sans\',sans-serif" onclick="showTriggerForm(\'' + safeId + '\')">+ Add Trigger</button>';
+      html += '</div>';
+
+      // Trigger form (hidden by default)
+      html += '<div class="trigger-form" id="' + safeId + '-trigger-form">';
+      html += '<div class="trigger-form-row">';
+      html += '<select id="' + safeId + '-trigger-category">';
+      html += '<option value="CTO Change">CTO Change</option>';
+      html += '<option value="Cost Cuts">Cost Cuts</option>';
+      html += '<option value="Failed Vendor">Failed Vendor</option>';
+      html += '<option value="Reorg">Reorg</option>';
+      html += '<option value="M&A">M&amp;A</option>';
+      html += '<option value="Digital Initiative">Digital Initiative</option>';
+      html += '<option value="Custom">Custom</option>';
+      html += '</select>';
+      html += '<input type="text" id="' + safeId + '-trigger-tag" placeholder="Trigger label (e.g. New CTO hired)" />';
+      html += '</div>';
+      html += '<textarea id="' + safeId + '-trigger-notes" placeholder="Optional notes..."></textarea>';
+      html += '<div class="trigger-form-actions">';
+      html += '<button class="primary" id="' + safeId + '-trigger-submit" onclick="submitTrigger(\'' + safeId + '\')">Save Trigger</button>';
+      html += '<button onclick="hideTriggerForm(\'' + safeId + '\')">Cancel</button>';
+      html += '</div>';
+      html += '</div>';
+
+      // Trigger badges
+      html += '<div class="trigger-badges" id="' + safeId + '-trigger-badges">';
+      if (!triggers || triggers.length === 0) {
+        html += '<span style="font-size:13px;color:var(--muted)">No buying triggers yet.</span>';
+      } else {
+        for (var i = 0; i < triggers.length; i++) {
+          var t = triggers[i];
+          var catClass = getCategoryClass(t.category);
+          var tooltip = t.notes ? ' title="' + escapeHtml(t.notes) + '"' : '';
+          html += '<span class="trigger-badge ' + catClass + '"' + tooltip + '>';
+          html += '<span class="trigger-cat">' + escapeHtml(t.category) + '</span>';
+          html += escapeHtml(t.tag);
+          html += '</span>';
+        }
+      }
+      html += '</div>';
+
+      section.innerHTML = html;
+    })
+    .catch(function() {
+      if (section) section.innerHTML = '<div class="strategy-empty">Failed to load triggers.</div>';
+    });
+}
+
+function showTriggerForm(accountId) {
+  var form = document.getElementById(accountId + '-trigger-form');
+  if (form) form.classList.add('show');
+}
+
+function hideTriggerForm(accountId) {
+  var form = document.getElementById(accountId + '-trigger-form');
+  if (form) {
+    form.classList.remove('show');
+    var tagInput = document.getElementById(accountId + '-trigger-tag');
+    var notesInput = document.getElementById(accountId + '-trigger-notes');
+    var catSelect = document.getElementById(accountId + '-trigger-category');
+    if (tagInput) tagInput.value = '';
+    if (notesInput) notesInput.value = '';
+    if (catSelect) catSelect.selectedIndex = 0;
+  }
+}
+
+function submitTrigger(accountId) {
+  var catSelect = document.getElementById(accountId + '-trigger-category');
+  var tagInput = document.getElementById(accountId + '-trigger-tag');
+  var notesInput = document.getElementById(accountId + '-trigger-notes');
+  var submitBtn = document.getElementById(accountId + '-trigger-submit');
+  if (!catSelect || !tagInput) return;
+
+  var tag = tagInput.value.trim();
+  if (!tag) {
+    tagInput.style.borderColor = 'var(--red)';
+    tagInput.focus();
+    return;
+  }
+  tagInput.style.borderColor = '';
+
+  var category = catSelect.value;
+  var notes = notesInput ? notesInput.value.trim() : '';
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/triggers', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tag: tag, category: category, notes: notes })
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Failed to save trigger');
+      return r.json();
+    })
+    .then(function() {
+      hideTriggerForm(accountId);
+      loadTriggers(accountId);
+      // Mark activity tab as needing reload so triggers appear in timeline
+      var activityPanel = document.getElementById(accountId + '-activity-panel');
+      if (activityPanel) activityPanel.dataset.loaded = '';
+    })
+    .catch(function() {
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Save Trigger'; }
+      alert('Failed to save trigger. Please try again.');
+    });
 }
 
 // ---- Activity Tab ----
