@@ -470,6 +470,45 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 .contacts-empty h3 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
 .contacts-empty p { font-size: 13px; margin-bottom: 16px; }
 
+/* ACTIVITY TAB */
+.activity-form { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 20px; }
+.activity-form-row { display: flex; gap: 8px; align-items: center; }
+.activity-form select, .activity-form input, .activity-form textarea { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 13px; color: var(--text); font-family: var(--font); outline: none; }
+.activity-form select:focus, .activity-form input:focus, .activity-form textarea:focus { border-color: var(--accent); }
+.activity-form select { min-width: 120px; }
+.activity-form input { flex: 1; }
+.activity-form textarea { width: 100%; min-height: 80px; resize: vertical; line-height: 1.5; }
+.activity-form-ftr { display: flex; justify-content: space-between; align-items: center; }
+.activity-form-error { font-size: 12px; color: var(--red); display: none; }
+.activity-form-error.show { display: block; }
+.activity-form-btn { background: var(--accent); border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; color: white; cursor: pointer; font-family: var(--font); }
+.activity-form-btn:hover { background: #2563EB; }
+.activity-form-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.debrief-area { margin-bottom: 20px; }
+.activity-timeline { display: flex; flex-direction: column; gap: 12px; }
+.activity-entry { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; border-left: 3px solid var(--muted); }
+.activity-entry[data-type="meeting"] { border-left-color: #3B82F6; }
+.activity-entry[data-type="call"] { border-left-color: #22C55E; }
+.activity-entry[data-type="email"] { border-left-color: #F59E0B; }
+.activity-entry[data-type="note"] { border-left-color: #94A3B8; }
+.activity-entry[data-type="other"] { border-left-color: #A78BFA; }
+.activity-entry-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.activity-type { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-weight: 500; text-transform: capitalize; }
+.activity-type[data-type="meeting"] { background: rgba(59,130,246,0.15); color: #3B82F6; }
+.activity-type[data-type="call"] { background: rgba(34,197,94,0.15); color: #22C55E; }
+.activity-type[data-type="email"] { background: rgba(245,158,11,0.15); color: #F59E0B; }
+.activity-type[data-type="note"] { background: rgba(148,163,184,0.15); color: #94A3B8; }
+.activity-type[data-type="other"] { background: rgba(167,139,250,0.15); color: #A78BFA; }
+.activity-ai-badge { display: inline-block; font-size: 10px; padding: 1px 5px; border-radius: 3px; background: rgba(167,139,250,0.2); color: var(--purple); font-family: var(--mono); font-weight: 500; }
+.activity-meta { font-size: 12px; color: var(--muted); }
+.activity-participants { font-size: 13px; color: var(--accent2); margin-bottom: 4px; }
+.activity-summary { font-size: 13px; color: var(--text); line-height: 1.6; }
+.activity-contacts-tags { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.activity-contact-tag { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 3px; background: rgba(59,130,246,0.1); color: var(--accent2); font-family: var(--mono); }
+.activity-empty { text-align: center; padding: 48px 16px; color: var(--muted); }
+.activity-empty h3 { font-size: 20px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+.activity-empty p { font-size: 13px; }
+
 @media (max-width: 900px) {
   .sidebar { display: none; }
   .g2,.g3,.g4 { grid-template-columns: 1fr; }
@@ -1645,6 +1684,177 @@ function submitOutreach(contactId) {
     .catch(function() {
       if (errorEl) { errorEl.textContent = "Couldn't save. Check your connection and try again."; errorEl.style.display = 'block'; }
       if (saveBtn) { saveBtn.textContent = 'Log Outreach'; saveBtn.disabled = false; }
+    });
+}
+
+// ---- Activity Tab ----
+
+function formatActivityDate(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr.replace(' ', 'T') + (dateStr.indexOf('Z') === -1 && dateStr.indexOf('+') === -1 ? 'Z' : ''));
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var hours = d.getHours();
+  var ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  if (hours === 0) hours = 12;
+  var mins = d.getMinutes();
+  var minStr = mins < 10 ? '0' + mins : '' + mins;
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + ' ' + hours + ':' + minStr + ' ' + ampm;
+}
+
+function loadActivity(accountId) {
+  var panel = document.getElementById(accountId + '-activity-panel');
+  if (!panel) return;
+  panel.innerHTML = '<p style="color:var(--muted);font-size:13px">Loading activity...</p>';
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/activity')
+    .then(function(r) { return r.json(); })
+    .then(function(entries) {
+      var safeId = escapeHtml(accountId);
+      var html = '';
+
+      // Manual entry form
+      html += '<div class="activity-form" id="' + safeId + '-activity-form">';
+      html += '<div style="font-size:14px;font-weight:500;margin-bottom:2px">Log Activity</div>';
+      html += '<div class="activity-form-row">';
+      html += '<select id="' + safeId + '-activity-type">';
+      html += '<option value="meeting">Meeting</option>';
+      html += '<option value="call">Call</option>';
+      html += '<option value="email">Email</option>';
+      html += '<option value="note">Note</option>';
+      html += '<option value="other">Other</option>';
+      html += '</select>';
+      html += '<input type="text" id="' + safeId + '-activity-participants" placeholder="Who was involved?" />';
+      html += '</div>';
+      html += '<textarea id="' + safeId + '-activity-summary" placeholder="What happened? Key takeaways and action items..."></textarea>';
+      html += '<div class="activity-form-ftr">';
+      html += '<div class="activity-form-error" id="' + safeId + '-activity-error"></div>';
+      html += '<button class="activity-form-btn" id="' + safeId + '-activity-submit" onclick="submitActivity(\'' + safeId + '\')">Log Entry</button>';
+      html += '</div>';
+      html += '</div>';
+
+      // Debrief area placeholder for Plan 03
+      html += '<div class="debrief-area" id="' + safeId + '-debrief-area"></div>';
+
+      // Timeline
+      html += '<div id="' + safeId + '-activity-timeline">';
+      html += renderActivityTimeline(accountId, entries);
+      html += '</div>';
+
+      panel.innerHTML = html;
+    })
+    .catch(function() {
+      if (panel) panel.innerHTML = '<p style="color:var(--red);font-size:13px">Something went wrong. Reload the page and try again.</p>';
+    });
+}
+
+function renderActivityTimeline(accountId, entries) {
+  if (!entries || entries.length === 0) {
+    return '<div class="activity-empty"><h3>No activity yet</h3><p>No activity logged yet. Use the form above to log your first pursuit activity.</p></div>';
+  }
+  var html = '<div class="activity-timeline">';
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    var safeType = escapeHtml(e.type || 'other');
+    html += '<div class="activity-entry" data-type="' + safeType + '">';
+    html += '<div class="activity-entry-hdr">';
+    html += '<span class="activity-type" data-type="' + safeType + '">' + safeType + '</span>';
+    if (e.source === 'ai_debrief') {
+      html += '<span class="activity-ai-badge">AI</span>';
+    }
+    html += '<span class="activity-meta">' + escapeHtml(formatActivityDate(e.created_at)) + '</span>';
+    html += '</div>';
+    if (e.participants && e.participants.trim()) {
+      html += '<div class="activity-participants">' + escapeHtml(e.participants) + '</div>';
+    }
+    html += '<div class="activity-summary">' + escapeHtml(e.summary).replace(/\n/g, '<br>') + '</div>';
+    if (e.linked_contacts) {
+      try {
+        var contactIds = JSON.parse(e.linked_contacts);
+        if (Array.isArray(contactIds) && contactIds.length > 0) {
+          html += '<div class="activity-contacts-tags">';
+          for (var j = 0; j < contactIds.length; j++) {
+            html += '<span class="activity-contact-tag">Contact #' + escapeHtml(String(contactIds[j])) + '</span>';
+          }
+          html += '</div>';
+        }
+      } catch (ex) { /* ignore malformed linked_contacts */ }
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function submitActivity(accountId) {
+  var typeEl = document.getElementById(accountId + '-activity-type');
+  var participantsEl = document.getElementById(accountId + '-activity-participants');
+  var summaryEl = document.getElementById(accountId + '-activity-summary');
+  var errorEl = document.getElementById(accountId + '-activity-error');
+  var submitBtn = document.getElementById(accountId + '-activity-submit');
+  if (!typeEl || !summaryEl) return;
+
+  var type = typeEl.value;
+  var participants = participantsEl ? participantsEl.value.trim() : '';
+  var summary = summaryEl.value.trim();
+
+  // Validate
+  if (!summary) {
+    if (errorEl) { errorEl.textContent = 'Summary is required.'; errorEl.classList.add('show'); }
+    return;
+  }
+  if (errorEl) { errorEl.classList.remove('show'); }
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving...'; }
+
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/activity', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: type, participants: participants, summary: summary, source: 'manual' })
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(entry) {
+      // Clear form
+      if (summaryEl) summaryEl.value = '';
+      if (participantsEl) participantsEl.value = '';
+      if (typeEl) typeEl.value = 'meeting';
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Log Entry'; }
+
+      // Prepend to timeline
+      var timelineEl = document.getElementById(accountId + '-activity-timeline');
+      if (timelineEl) {
+        var existingTimeline = timelineEl.querySelector('.activity-timeline');
+        var emptyState = timelineEl.querySelector('.activity-empty');
+        if (emptyState) {
+          // Replace empty state with a new timeline
+          timelineEl.innerHTML = renderActivityTimeline(accountId, [entry]);
+        } else if (existingTimeline) {
+          // Prepend new entry
+          var safeType = escapeHtml(entry.type || 'other');
+          var entryHtml = '<div class="activity-entry" data-type="' + safeType + '">';
+          entryHtml += '<div class="activity-entry-hdr">';
+          entryHtml += '<span class="activity-type" data-type="' + safeType + '">' + safeType + '</span>';
+          if (entry.source === 'ai_debrief') {
+            entryHtml += '<span class="activity-ai-badge">AI</span>';
+          }
+          entryHtml += '<span class="activity-meta">' + escapeHtml(formatActivityDate(entry.created_at)) + '</span>';
+          entryHtml += '</div>';
+          if (entry.participants && entry.participants.trim()) {
+            entryHtml += '<div class="activity-participants">' + escapeHtml(entry.participants) + '</div>';
+          }
+          entryHtml += '<div class="activity-summary">' + escapeHtml(entry.summary).replace(/\n/g, '<br>') + '</div>';
+          entryHtml += '</div>';
+          existingTimeline.insertAdjacentHTML('afterbegin', entryHtml);
+        } else {
+          timelineEl.innerHTML = renderActivityTimeline(accountId, [entry]);
+        }
+      }
+    })
+    .catch(function() {
+      if (errorEl) { errorEl.textContent = "Couldn't save. Check your connection and try again."; errorEl.classList.add('show'); }
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Log Entry'; }
     });
 }
 
