@@ -576,6 +576,148 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // AI debrief extraction endpoint
+  const debriefMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/debrief$/);
+
+  if (req.method === 'POST' && debriefMatch) {
+    readBody(req, res, (body) => {
+      let parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+
+      var debrief_text = parsed_body.text;
+      if (!debrief_text || typeof debrief_text !== 'string' || !debrief_text.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'text field is required and must be a non-empty string' }));
+        return;
+      }
+
+      var account = db.getAccount(debriefMatch[1]);
+      if (!account) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Account not found' }));
+        return;
+      }
+
+      var recentActivity = db.getActivity(debriefMatch[1], 10);
+      var contacts = db.getContacts(debriefMatch[1]);
+
+      var systemPrompt = GD_CONTEXT +
+        '\n\nACCOUNT: ' + account.name +
+        '\nSECTOR: ' + account.sector +
+        '\nHQ: ' + account.hq +
+        '\nREVENUE: ' + account.revenue +
+        '\n\nACCOUNT INTELLIGENCE:\n' + account.context;
+
+      if (recentActivity.length > 0) {
+        systemPrompt += '\n\nRECENT ACTIVITY:\n' + recentActivity.map(function(a) {
+          return a.created_at + ' [' + a.type + '] ' + a.summary;
+        }).join('\n');
+      }
+
+      if (contacts.length > 0) {
+        systemPrompt += '\n\nKNOWN CONTACTS:\n' + contacts.map(function(c) {
+          return c.name + ' - ' + c.title + ' (' + c.influence + ')';
+        }).join('\n');
+      }
+
+      var userMessage = 'Extract structured activity log entries from the following meeting debrief. ' +
+        'Return ONLY valid JSON with no additional text, no markdown code fences. Use this exact format:\n' +
+        '{"activities": [{"date": "YYYY-MM-DD", "type": "meeting|call|email|note|other", ' +
+        '"participants": "Name (Title), Name (Title)", "summary": "What happened and key takeaways", ' +
+        '"action_items": "Next steps"}], ' +
+        '"contact_updates": [{"action": "new|update", "name": "Full Name", ' +
+        '"title": "Job Title", "influence": "Champion|Evaluator|Blocker", ' +
+        '"changes": "what changed (for updates only)"}]}\n\n' +
+        'If no contact updates are needed, return an empty contact_updates array.\n' +
+        'Embed action items naturally in the summary text.\n\n' +
+        'DEBRIEF:\n' + debrief_text;
+
+      var payload = JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      });
+
+      var options = {
+        hostname: 'api.anthropic.com',
+        port: 443,
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(payload)
+        }
+      };
+
+      var proxy = https.request(options, function(apiRes) {
+        var data = '';
+        apiRes.on('data', function(chunk) { data += chunk; });
+        apiRes.on('end', function() {
+          try {
+            var parsed_resp = JSON.parse(data);
+            if (apiRes.statusCode !== 200) {
+              res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
+              res.end(data);
+              return;
+            }
+            var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
+
+            // Try to parse as JSON directly
+            var proposals;
+            try {
+              proposals = JSON.parse(text);
+            } catch (e1) {
+              // Fallback: try extracting from code fences
+              var fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+              if (fenceMatch) {
+                try {
+                  proposals = JSON.parse(fenceMatch[1].trim());
+                } catch (e2) {
+                  proposals = null;
+                }
+              }
+            }
+
+            if (!proposals) {
+              res.writeHead(422, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Could not parse AI response', raw: text }));
+              return;
+            }
+
+            // Ensure expected shape
+            if (!proposals.activities) proposals.activities = [];
+            if (!proposals.contact_updates) proposals.contact_updates = [];
+
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(proposals));
+          } catch (e) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+          }
+        });
+      });
+
+      proxy.on('error', function(e) {
+        console.error('Anthropic API error:', e.message);
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+      });
+
+      proxy.write(payload);
+      proxy.end();
+    });
+    return;
+  }
+
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
     readBody(req, res, (body) => {
