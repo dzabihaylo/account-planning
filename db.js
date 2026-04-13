@@ -96,6 +96,28 @@ if (version < 2) {
   migrate2();
 }
 
+if (version < 3) {
+  const migrate3 = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        type TEXT NOT NULL CHECK(type IN ('meeting', 'call', 'email', 'note', 'other')),
+        participants TEXT NOT NULL DEFAULT '',
+        summary TEXT NOT NULL,
+        linked_contacts TEXT,
+        source TEXT NOT NULL DEFAULT 'manual' CHECK(source IN ('manual', 'ai_debrief')),
+        ai_raw TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_activity_account ON activity_log(account_id);
+      PRAGMA user_version = 3;
+    `);
+  });
+  migrate3();
+}
+
 // Seed data
 const count = db.prepare('SELECT COUNT(*) AS cnt FROM accounts').get().cnt;
 
@@ -414,6 +436,25 @@ function updateContactAI(id, { ai_rationale, warm_path }) {
   return db.prepare('SELECT * FROM contacts WHERE id = ?').get(id);
 }
 
+// Activity log query helpers
+
+function getActivity(accountId, limit) {
+  limit = limit || 50;
+  return db.prepare(
+    'SELECT * FROM activity_log WHERE account_id = ? ORDER BY created_at DESC LIMIT ?'
+  ).all(accountId, limit);
+}
+
+function addActivity({ account_id, type, participants, summary, linked_contacts, source, ai_raw }) {
+  var result = db.prepare(
+    'INSERT INTO activity_log (account_id, type, participants, summary, linked_contacts, source, ai_raw) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).run(
+    account_id, type, participants || '', summary,
+    linked_contacts || null, source || 'manual', ai_raw || null
+  );
+  return db.prepare('SELECT * FROM activity_log WHERE id = ?').get(result.lastInsertRowid);
+}
+
 module.exports = {
   db,
   getAccounts,
@@ -432,5 +473,7 @@ module.exports = {
   deleteContact,
   getOutreachLog,
   addOutreachEntry,
-  updateContactAI
+  updateContactAI,
+  getActivity,
+  addActivity
 };
