@@ -728,6 +728,7 @@ function renderAccountPanel(account) {
   html += '<div class="acct-tabs">';
   html += '<button class="acct-tab active" onclick="showTab(\'' + id + '\',\'overview\',this)">Overview</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'contacts\',this)">Contacts</button>';
+  html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'activity\',this)">Activity</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'ai\',this)">Ask AI</button>';
   html += '</div>';
 
@@ -739,6 +740,10 @@ function renderAccountPanel(account) {
   html += '</div>';
   // Contacts tab
   html += '<div class="tab-pane" id="' + id + '-contacts"><div id="' + id + '-contacts-panel"></div></div>';
+  // Activity tab
+  html += '<div class="tab-pane" id="' + id + '-activity">';
+  html += '<div id="' + id + '-activity-panel"></div>';
+  html += '</div>';
   // AI tab
   html += '<div class="tab-pane" id="' + id + '-ai"><div id="' + id + '-ai-panel"></div></div>';
   html += '</div>';
@@ -795,6 +800,13 @@ function showTab(account, tab, btn) {
     if (contactsPanel && !contactsPanel.dataset.loaded) {
       contactsPanel.dataset.loaded = '1';
       loadContacts(account);
+    }
+  }
+  if (tab === 'activity') {
+    var activityPanel = document.getElementById(account + '-activity-panel');
+    if (activityPanel && !activityPanel.dataset.loaded) {
+      activityPanel.dataset.loaded = '1';
+      loadActivity(account);
     }
   }
 }
