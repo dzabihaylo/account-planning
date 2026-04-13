@@ -718,6 +718,288 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Private intel API routes
+  const intelMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/intel$/);
+
+  // GET /api/accounts/:id/intel - list private intel notes (reverse chronological)
+  if (req.method === 'GET' && intelMatch) {
+    var account = db.getAccount(intelMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+    var notes = db.getIntel(intelMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(notes));
+    return;
+  }
+
+  // POST /api/accounts/:id/intel - add a private intel note
+  if (req.method === 'POST' && intelMatch) {
+    readBody(req, res, (body) => {
+      var parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      if (!parsed_body.content || typeof parsed_body.content !== 'string' || !parsed_body.content.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'content is required and must be a non-empty string' }));
+        return;
+      }
+      var account = db.getAccount(intelMatch[1]);
+      if (!account) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Account not found' }));
+        return;
+      }
+      var note = db.addIntel(intelMatch[1], parsed_body.content.trim());
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(note));
+    });
+    return;
+  }
+
+  // Strategy API routes
+  const strategyMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/strategy$/);
+
+  // GET /api/accounts/:id/strategy - get current strategy summary
+  if (req.method === 'GET' && strategyMatch) {
+    var account = db.getAccount(strategyMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+    var strategy = db.getStrategy(strategyMatch[1]);
+    if (!strategy) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ content: null }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(strategy));
+    return;
+  }
+
+  // POST /api/accounts/:id/strategy - AI strategy synthesis
+  if (req.method === 'POST' && strategyMatch) {
+    var account = db.getAccount(strategyMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+
+    // Gather all data sources per D-08
+    var activities = db.getActivity(strategyMatch[1], 20);
+    var intel = db.getIntel(strategyMatch[1]).slice(0, 20);
+    var contacts = db.getContacts(strategyMatch[1]);
+    var triggers = db.getTriggers(strategyMatch[1]);
+    var chatMessages = db.getChatMessages(strategyMatch[1]);
+
+    // Build system prompt
+    var systemPrompt = GD_CONTEXT +
+      '\n\nACCOUNT: ' + account.name +
+      '\nSECTOR: ' + account.sector +
+      '\nHQ: ' + account.hq +
+      '\nREVENUE: ' + account.revenue +
+      '\n\nACCOUNT INTELLIGENCE:\n' + account.context;
+
+    if (activities.length > 0) {
+      systemPrompt += '\n\nPURSUIT ACTIVITY LOG:\n' + activities.map(function(a) {
+        return a.created_at + ' [' + a.type + '] ' + a.summary;
+      }).join('\n');
+    }
+
+    if (intel.length > 0) {
+      systemPrompt += '\n\nPRIVATE INTEL NOTES:\n' + intel.map(function(n) {
+        return n.created_at + ': ' + n.content;
+      }).join('\n');
+    }
+
+    if (contacts.length > 0) {
+      systemPrompt += '\n\nKEY CONTACTS:\n' + contacts.map(function(c) {
+        return c.name + ' - ' + c.title + ' (' + c.influence + ')' +
+          (c.ai_rationale ? ' | Rationale: ' + c.ai_rationale.substring(0, 200) : '');
+      }).join('\n');
+    }
+
+    if (triggers.length > 0) {
+      systemPrompt += '\n\nBUYING TRIGGERS:\n' + triggers.map(function(t) {
+        return t.created_at + ' [' + t.category + '] ' + t.tag +
+          (t.notes ? ' - ' + t.notes : '');
+      }).join('\n');
+    }
+
+    if (chatMessages.length > 0) {
+      systemPrompt += '\n\nRECENT AI CHAT INSIGHTS:\n' + chatMessages.slice(-30).map(function(m) {
+        return '[' + m.role + '] ' + m.content.substring(0, 300);
+      }).join('\n');
+    }
+
+    var userMessage = 'Synthesize a pursuit strategy for this account based on ALL the data above. ' +
+      'Structure your response as:\n\n' +
+      '**Current Situation**: What we know about this account and where things stand.\n\n' +
+      '**Why Now**: What buying triggers or signals make this the right time to engage.\n\n' +
+      '**Recommended Approach**: Specific entry points, which contacts to prioritize, what to pitch.\n\n' +
+      '**Key Risks**: What could go wrong and how to mitigate.\n\n' +
+      '**Next Steps**: Concrete actions to take in the next 2 weeks.\n\n' +
+      'Be specific, actionable, and concise. Reference specific people, events, and data points from the intelligence above.';
+
+    var payload = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+    var options = {
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    var proxy = https.request(options, function(apiRes) {
+      var data = '';
+      apiRes.on('data', function(chunk) { data += chunk; });
+      apiRes.on('end', function() {
+        try {
+          var parsed_resp = JSON.parse(data);
+          if (apiRes.statusCode !== 200) {
+            res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
+            res.end(data);
+            return;
+          }
+          var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
+          if (!text) {
+            res.writeHead(422, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Empty AI response' }));
+            return;
+          }
+          var row = db.upsertStrategy(strategyMatch[1], text);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(row));
+        } catch (e) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+        }
+      });
+    });
+
+    proxy.on('error', function(e) {
+      console.error('Anthropic API error:', e.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+    });
+
+    proxy.write(payload);
+    proxy.end();
+    return;
+  }
+
+  // PUT /api/accounts/:id/strategy - save manual edits
+  if (req.method === 'PUT' && strategyMatch) {
+    readBody(req, res, (body) => {
+      var parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      if (!parsed_body.content || typeof parsed_body.content !== 'string' || !parsed_body.content.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'content is required and must be a non-empty string' }));
+        return;
+      }
+      var account = db.getAccount(strategyMatch[1]);
+      if (!account) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Account not found' }));
+        return;
+      }
+      var updated = db.updateStrategyContent(strategyMatch[1], parsed_body.content.trim());
+      if (!updated) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'No strategy exists for this account. Generate one first.' }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(updated));
+    });
+    return;
+  }
+
+  // Buying triggers API routes
+  const triggersMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/triggers$/);
+
+  // GET /api/accounts/:id/triggers - list buying triggers
+  if (req.method === 'GET' && triggersMatch) {
+    var account = db.getAccount(triggersMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+    var triggers = db.getTriggers(triggersMatch[1]);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(triggers));
+    return;
+  }
+
+  // POST /api/accounts/:id/triggers - add a buying trigger
+  if (req.method === 'POST' && triggersMatch) {
+    readBody(req, res, (body) => {
+      var parsed_body;
+      try {
+        parsed_body = JSON.parse(body);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      if (!parsed_body.tag || typeof parsed_body.tag !== 'string' || !parsed_body.tag.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'tag is required and must be a non-empty string' }));
+        return;
+      }
+      var validCategories = ['CTO Change', 'Cost Cuts', 'Failed Vendor', 'Reorg', 'M&A', 'Digital Initiative', 'Custom'];
+      if (!parsed_body.category || !validCategories.includes(parsed_body.category)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'category must be one of: ' + validCategories.join(', ') }));
+        return;
+      }
+      var account = db.getAccount(triggersMatch[1]);
+      if (!account) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Account not found' }));
+        return;
+      }
+      var trigger = db.addTrigger({
+        account_id: triggersMatch[1],
+        tag: parsed_body.tag.trim(),
+        category: parsed_body.category,
+        notes: parsed_body.notes || ''
+      });
+      res.writeHead(201, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(trigger));
+    });
+    return;
+  }
+
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
     readBody(req, res, (body) => {
