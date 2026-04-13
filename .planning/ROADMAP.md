@@ -86,7 +86,14 @@ Plans:
   2. Each account displays an AI-synthesized strategy summary that draws on pursuit logs, private intel, chat history, and contact data
   3. User can manually edit the strategy summary to correct or refine AI suggestions — edits persist
   4. User can tag a buying trigger (e.g., CTO change, cost cuts, failed vendor) to an account and see it reflected in the account timeline
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Database schema v4 (private_intel, strategy_summaries, buying_triggers tables) and 7 API routes including AI strategy synthesis
+- [ ] 04-02-PLAN.md — Strategy tab UI: private intel notes list/form and AI strategy summary card with edit/regenerate
+- [ ] 04-03-PLAN.md — Buying trigger badges, add trigger form, and Activity timeline integration
+
+**UI hint**: yes
 
 ### Phase 5: Intelligence Refresh
 **Goal**: Public account intelligence stays current — financials, news, exec changes — without manual HTML edits or runaway AI costs
@@ -118,7 +125,7 @@ Plans:
 | 1. Persistence & Account Management | 3/3 | Complete | - |
 | 2. Contact Intelligence | 0/3 | Planning complete | - |
 | 3. Pursuit Tracking | 0/3 | Planning complete | - |
-| 4. Pursuit Strategy | 0/? | Not started | - |
+| 4. Pursuit Strategy | 0/3 | Planning complete | - |
 | 5. Intelligence Refresh | 0/? | Not started | - |
 | 6. Briefing & Output | 0/? | Not started | - |
 
@@ -158,4 +165,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-04-10*
-*Last updated: 2026-04-12 after Phase 3 planning*
+*Last updated: 2026-04-13 after Phase 4 planning*
