@@ -883,6 +883,38 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   .contact-grid { grid-template-columns: 1fr; }
   .contact-fields { grid-template-columns: 1fr; }
 }
+
+@media print {
+  /* Hide all app chrome */
+  .topnav,
+  .sidebar,
+  .acct-header,
+  .acct-tabs,
+  .briefing-actions,
+  .stale-badge,
+  .acct-actions { display: none !important; }
+
+  /* Reset dark theme to white page */
+  body, html { background: #fff !important; color: #000 !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .acct-content { border: none !important; background: #fff !important; padding: 0 !important; }
+
+  /* Hide all tab panes except the active one (the briefing) */
+  .tab-pane { display: none !important; }
+  .tab-pane.active { display: block !important; }
+
+  /* Account panel: remove dark styling */
+  .account-panel { background: #fff !important; border: none !important; }
+
+  /* Briefing card: clean print appearance */
+  .briefing-card { box-shadow: none !important; border: none !important; background: #fff !important; color: #000 !important; padding: 0 !important; }
+  .briefing-content { font-size: 12px !important; line-height: 1.6 !important; color: #000 !important; }
+  .briefing-meta { color: #666 !important; font-size: 11px !important; }
+  .briefing-section-header { color: #000 !important; border-bottom: 1px solid #ccc !important; padding-bottom: 4px !important; margin-top: 16px !important; page-break-inside: avoid !important; }
+
+  /* Page settings */
+  @page { margin: 20mm; size: A4 portrait; }
+}
 </style>
 </head>
 <body>
