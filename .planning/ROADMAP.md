@@ -89,9 +89,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Database schema v4 (private_intel, strategy_summaries, buying_triggers tables) and 7 API routes including AI strategy synthesis
-- [ ] 04-02-PLAN.md — Strategy tab UI: private intel notes list/form and AI strategy summary card with edit/regenerate
-- [ ] 04-03-PLAN.md — Buying trigger badges, add trigger form, and Activity timeline integration
+- [x] 04-01-PLAN.md — Database schema v4 (private_intel, strategy_summaries, buying_triggers tables) and 7 API routes including AI strategy synthesis
+- [x] 04-02-PLAN.md — Strategy tab UI: private intel notes list/form and AI strategy summary card with edit/regenerate
+- [x] 04-03-PLAN.md — Buying trigger badges, add trigger form, and Activity timeline integration
 
 **UI hint**: yes
 
