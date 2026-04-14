@@ -1138,6 +1138,167 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Briefing API routes
+  const briefingMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/briefing$/);
+
+  // GET /api/accounts/:id/briefing - get cached briefing
+  if (req.method === 'GET' && briefingMatch) {
+    var account = db.getAccount(briefingMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+    var briefing = db.getBriefing(briefingMatch[1]);
+    if (!briefing) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'No briefing generated yet' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(briefing));
+    return;
+  }
+
+  // POST /api/accounts/:id/briefing - generate AI briefing
+  if (req.method === 'POST' && briefingMatch) {
+    var account = db.getAccount(briefingMatch[1]);
+    if (!account) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+
+    // Gather data sources (capped to control token usage)
+    var activities = db.getActivity(briefingMatch[1], 10);
+    var intel = db.getIntel(briefingMatch[1]).slice(0, 10);
+    var contacts = db.getContacts(briefingMatch[1]).slice(0, 5);
+    var triggers = db.getTriggers(briefingMatch[1]);
+    var strategy = db.getStrategy(briefingMatch[1]);
+
+    // Build system prompt
+    var systemPrompt = GD_CONTEXT +
+      '\n\nACCOUNT: ' + account.name +
+      '\nSECTOR: ' + account.sector +
+      '\nHQ: ' + account.hq +
+      '\nREVENUE: ' + account.revenue +
+      '\nEMPLOYEES: ' + account.employees +
+      '\n\nACCOUNT INTELLIGENCE:\n' + account.context;
+
+    if (contacts.length > 0) {
+      systemPrompt += '\n\nKEY CONTACTS:\n' + contacts.map(function(c) {
+        return c.name + ' | ' + c.title + ' | ' + c.influence +
+          (c.ai_rationale ? ' | ' + c.ai_rationale.substring(0, 200) : '');
+      }).join('\n');
+    }
+
+    if (strategy && strategy.content) {
+      systemPrompt += '\n\nCURRENT STRATEGY SUMMARY:\n' + strategy.content.substring(0, 1000);
+    }
+
+    if (activities.length > 0) {
+      systemPrompt += '\n\nRECENT ACTIVITY LOG:\n' + activities.map(function(a) {
+        return a.created_at + ' [' + a.type + '] ' + a.summary;
+      }).join('\n');
+    }
+
+    if (intel.length > 0) {
+      systemPrompt += '\n\nPRIVATE INTEL NOTES:\n' + intel.map(function(n) {
+        return n.created_at + ': ' + n.content;
+      }).join('\n');
+    }
+
+    if (triggers.length > 0) {
+      systemPrompt += '\n\nBUYING TRIGGERS:\n' + triggers.map(function(t) {
+        return t.created_at + ' [' + t.category + '] ' + t.tag +
+          (t.notes ? ' - ' + t.notes : '');
+      }).join('\n');
+    }
+
+    var userMessage = 'You are preparing a pre-meeting executive briefing for a Grid Dynamics pursuit team. ' +
+      'This briefing will be printed and distributed before a meeting with ' + account.name + '. ' +
+      'Write a professional, concise one-pager that a team member can read in 2 minutes. ' +
+      'Avoid jargon. Do not use em dashes or double hyphens. ' +
+      'Return plain text only. Do not use markdown code fences.\n\n' +
+      'Structure your response exactly as follows:\n\n' +
+      '## ' + account.name + ' -- Account Briefing\n\n' +
+      '## Company Snapshot\n' +
+      '[2-3 sentences: what the company does, revenue, employees, HQ]\n\n' +
+      '## Key Contacts\n' +
+      '[For each contact: Name | Title | Influence Level -- one-line rationale for engaging them. If no contacts exist, note that contact mapping is needed.]\n\n' +
+      '## Current Strategy\n' +
+      '[3-5 bullets: where we are, what we have heard, what is working]\n\n' +
+      '## Recent Activity\n' +
+      '[3-5 bullets: most significant recent log entries. If no activity logged, note this is a new pursuit.]\n\n' +
+      '## Buying Triggers\n' +
+      '[2-4 bullets: active triggers that make this the right time. If none tagged, identify potential triggers from account intelligence.]\n\n' +
+      '## Recommended Next Steps\n' +
+      '[3-4 numbered actions to take in the next 2 weeks]';
+
+    var payload = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 3000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+    var options = {
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    var proxy = https.request(options, function(apiRes) {
+      var data = '';
+      apiRes.on('data', function(chunk) { data += chunk; });
+      apiRes.on('end', function() {
+        try {
+          var parsed_resp = JSON.parse(data);
+          if (apiRes.statusCode !== 200) {
+            res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
+            res.end(data);
+            return;
+          }
+          var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
+          if (!text) {
+            res.writeHead(422, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Empty AI response' }));
+            return;
+          }
+          // Strip code fences if AI wraps in them
+          if (text.indexOf('```') !== -1) {
+            text = text.replace(/```(?:markdown)?\s*/g, '').replace(/```\s*$/g, '').trim();
+          }
+          var totalTokens = (parsed_resp.usage && parsed_resp.usage.input_tokens || 0) +
+            (parsed_resp.usage && parsed_resp.usage.output_tokens || 0);
+          var row = db.saveBriefing(briefingMatch[1], text, totalTokens);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(row));
+        } catch (e) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+        }
+      });
+    });
+
+    proxy.on('error', function(e) {
+      console.error('Anthropic API error:', e.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+    });
+
+    proxy.write(payload);
+    proxy.end();
+    return;
+  }
+
   // Buying triggers API routes
   const triggersMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/triggers$/);
 

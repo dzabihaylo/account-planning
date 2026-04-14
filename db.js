@@ -186,6 +186,23 @@ if (version < 5) {
   migrate5();
 }
 
+if (version < 6) {
+  const migrate6 = db.transaction(() => {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS briefings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL UNIQUE,
+        content TEXT NOT NULL,
+        generated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        tokens_used INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+      PRAGMA user_version = 6;
+    `);
+  });
+  migrate6();
+}
+
 // Seed data
 const count = db.prepare('SELECT COUNT(*) AS cnt FROM accounts').get().cnt;
 
@@ -632,6 +649,24 @@ function getAccountsByRefreshPriority() {
   return db.prepare('SELECT * FROM accounts WHERE is_deleted = 0 ORDER BY last_refreshed_at IS NOT NULL, last_refreshed_at ASC').all();
 }
 
+// Briefing query helpers
+
+function getBriefing(accountId) {
+  return db.prepare('SELECT * FROM briefings WHERE account_id = ?').get(accountId);
+}
+
+function saveBriefing(accountId, content, tokensUsed) {
+  db.prepare(`
+    INSERT INTO briefings (account_id, content, tokens_used, generated_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(account_id) DO UPDATE SET
+      content = excluded.content,
+      tokens_used = excluded.tokens_used,
+      generated_at = excluded.generated_at
+  `).run(accountId, content, tokensUsed || 0);
+  return db.prepare('SELECT * FROM briefings WHERE account_id = ?').get(accountId);
+}
+
 module.exports = {
   db,
   getAccounts,
@@ -664,5 +699,7 @@ module.exports = {
   recordRefreshTokens,
   updateAccountFromRefresh,
   getRefreshLog,
-  getAccountsByRefreshPriority
+  getAccountsByRefreshPriority,
+  getBriefing,
+  saveBriefing
 };
