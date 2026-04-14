@@ -20,7 +20,7 @@ db.pragma('foreign_keys = ON');
 // Schema migration using PRAGMA user_version
 const version = db.pragma('user_version', { simple: true });
 
-if (version === 0) {
+if (version < 1) {
   const migrate = db.transaction(() => {
     db.exec(`
       CREATE TABLE IF NOT EXISTS accounts (
