@@ -418,12 +418,6 @@ const server = http.createServer((req, res) => {
   // Manual refresh — POST /api/accounts/:id/refresh
   var refreshMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/refresh$/);
   if (req.method === 'POST' && refreshMatch) {
-    if (!isAuthenticated(req)) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Unauthorized' }));
-      return;
-    }
-
     var refreshAccountId = refreshMatch[1];
     var acct = db.getAccount(refreshAccountId);
     if (!acct) {
@@ -446,12 +440,6 @@ const server = http.createServer((req, res) => {
 
   // Budget status — GET /api/refresh/budget
   if (req.method === 'GET' && parsed.pathname === '/api/refresh/budget') {
-    if (!isAuthenticated(req)) {
-      res.writeHead(401, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Unauthorized' }));
-      return;
-    }
-
     var budget = db.getMonthlyBudget();
     var pct = budget.budget_limit > 0 ? Math.round((budget.tokens_used / budget.budget_limit) * 100) : 0;
     res.writeHead(200, { 'Content-Type': 'application/json' });
