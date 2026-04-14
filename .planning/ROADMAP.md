@@ -118,7 +118,12 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can open a briefing view for any account showing an AI-composed one-pager: status, key contacts, current strategy, and recommended next steps
   2. User can print the briefing or export it as a PDF using the browser's native print function — output is clean and readable
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — AI briefing tab: migration v6 (briefings table), GET/POST API endpoints, Briefing tab with generate/regenerate/render lifecycle
+- [ ] 06-02-PLAN.md — Print-ready output: @media print CSS block, visual verification checkpoint
+
 **UI hint**: yes
 
 ---
@@ -132,7 +137,7 @@ Plans:
 | 3. Pursuit Tracking | 0/3 | Planning complete | - |
 | 4. Pursuit Strategy | 0/3 | Planning complete | - |
 | 5. Intelligence Refresh | 3/3 | Complete   | 2026-04-14 |
-| 6. Briefing & Output | 0/? | Not started | - |
+| 6. Briefing & Output | 0/2 | Planning complete | - |
 
 ---
 
@@ -170,4 +175,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-04-10*
-*Last updated: 2026-04-14 after Phase 5 planning*
+*Last updated: 2026-04-14 after Phase 6 planning*
