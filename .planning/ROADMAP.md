@@ -174,5 +174,18 @@ Plans:
 | BREF-02 | 6 | Print/PDF is part of briefing output |
 
 ---
+
+## Backlog
+
+### Phase 999.1: LinkedIn Connection Graph (BACKLOG)
+
+**Goal:** Show 1st and 2nd degree LinkedIn connection paths to target contacts alongside contact cards. The tool tells you WHO to reach — this tells you HOW to reach them through your network. Likely requires LinkedIn Sales Navigator API (TeamLink feature) or equivalent. Solves the core GTM bottleneck: getting meetings depends on warm paths, not just knowing names and titles.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
 *Roadmap created: 2026-04-10*
 *Last updated: 2026-04-14 after Phase 6 planning*
