@@ -80,7 +80,11 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   display: flex;
   flex-direction: column;
 }
-.sidebar-section { padding: 0 12px 8px; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 12px; }
+.sidebar-section { padding: 0 12px 8px; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 12px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+.sidebar-section:hover { color: var(--text); }
+.sidebar-section-chevron { font-size: 9px; color: var(--muted); transition: transform 0.2s; display: inline-block; }
+.sidebar-section.collapsed .sidebar-section-chevron { transform: rotate(-90deg); }
+.sidebar-group.collapsed { display: none; }
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -1107,6 +1111,9 @@ async function loadAccounts() {
   document.getElementById('acctCount').textContent = accounts.length + ' account' + (accounts.length !== 1 ? 's' : '');
 }
 
+// ---- Section collapse state ----
+var sectionState = {};
+
 // ---- Sidebar Rendering ----
 function renderSidebar() {
   const sidebar = document.getElementById('sidebar');
@@ -1120,7 +1127,12 @@ function renderSidebar() {
   for (var i = 0; i < sectors.length; i++) {
     var sector = sectors[i];
     var items = groups[sector];
-    html += '<div class="sidebar-section">' + escapeHtml(sector) + '</div>';
+    var isCollapsed = sectionState[sector] === true;
+    html += '<div class="sidebar-section' + (isCollapsed ? ' collapsed' : '') + '" onclick="toggleSection(' + i + ')" id="sec-' + i + '">';
+    html += '<span>' + escapeHtml(sector) + '</span>';
+    html += '<span class="sidebar-section-chevron">&#9660;</span>';
+    html += '</div>';
+    html += '<div class="sidebar-group' + (isCollapsed ? ' collapsed' : '') + '" id="group-' + i + '">';
     for (var j = 0; j < items.length; j++) {
       var a = items[j];
       var shortName = getShortName(a.name);
@@ -1130,10 +1142,31 @@ function renderSidebar() {
       html += '<span class="sidebar-revenue">' + escapeHtml(a.display_revenue || '') + '</span>';
       html += '</button>';
     }
+    html += '</div>';
   }
   html += '</div>';
   html += '<button class="sidebar-add" onclick="openAddModal()">+ Add Account</button>';
   sidebar.innerHTML = html;
+}
+
+// ---- Toggle Section ----
+function toggleSection(index) {
+  var secEl = document.getElementById('sec-' + index);
+  var groupEl = document.getElementById('group-' + index);
+  if (!secEl || !groupEl) return;
+  var isCollapsed = groupEl.classList.contains('collapsed');
+  // Derive sector name from the span inside the header
+  var sectorSpan = secEl.querySelector('span');
+  var sector = sectorSpan ? sectorSpan.textContent : '';
+  if (isCollapsed) {
+    groupEl.classList.remove('collapsed');
+    secEl.classList.remove('collapsed');
+    sectionState[sector] = false;
+  } else {
+    groupEl.classList.add('collapsed');
+    secEl.classList.add('collapsed');
+    sectionState[sector] = true;
+  }
 }
 
 function getShortName(name) {
@@ -1227,7 +1260,23 @@ function showAccount(id) {
   if (panel) panel.classList.add('active');
 
   var sbItem = document.getElementById('sb-' + id);
-  if (sbItem) sbItem.classList.add('active');
+  if (sbItem) {
+    sbItem.classList.add('active');
+    // Expand parent section if it is collapsed
+    var parentGroup = sbItem.closest('.sidebar-group');
+    if (parentGroup && parentGroup.classList.contains('collapsed')) {
+      var groupId = parentGroup.id; // e.g. "group-2"
+      var idx = groupId.replace('group-', '');
+      var secEl = document.getElementById('sec-' + idx);
+      parentGroup.classList.remove('collapsed');
+      if (secEl) {
+        secEl.classList.remove('collapsed');
+        var sectorSpan = secEl.querySelector('span');
+        var sector = sectorSpan ? sectorSpan.textContent : '';
+        sectionState[sector] = false;
+      }
+    }
+  }
 
   currentAccount = id;
 
@@ -1417,11 +1466,36 @@ function filterAccounts(query) {
   var q = query.toLowerCase();
   var items = document.querySelectorAll('.sidebar-item');
   var visible = 0;
+  var isSearching = q.length > 0;
+
   items.forEach(function(item) {
     var matches = item.textContent.toLowerCase().includes(q);
     item.style.display = matches ? '' : 'none';
     if (matches) visible++;
   });
+
+  // Show all groups when searching so matching items are visible regardless of collapse state
+  // Restore saved collapse state when search is cleared
+  var groups = document.querySelectorAll('.sidebar-group');
+  var secs = document.querySelectorAll('.sidebar-section');
+  if (isSearching) {
+    groups.forEach(function(g) { g.classList.remove('collapsed'); });
+    secs.forEach(function(s) { s.classList.remove('collapsed'); });
+  } else {
+    groups.forEach(function(g, i) {
+      var secEl = document.getElementById('sec-' + i);
+      var sectorSpan = secEl ? secEl.querySelector('span') : null;
+      var sector = sectorSpan ? sectorSpan.textContent : '';
+      if (sectionState[sector] === true) {
+        g.classList.add('collapsed');
+        if (secEl) secEl.classList.add('collapsed');
+      } else {
+        g.classList.remove('collapsed');
+        if (secEl) secEl.classList.remove('collapsed');
+      }
+    });
+  }
+
   document.getElementById('acctCount').textContent = visible + ' account' + (visible !== 1 ? 's' : '');
 }
 
