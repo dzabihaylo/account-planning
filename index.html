@@ -427,6 +427,21 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 .stale-aging { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: var(--gold); }
 .stale-stale { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
 
+/* REFRESH BUTTON & TOAST */
+.refresh-btn { background: var(--accent); color: #fff; border: none; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: opacity 0.15s; font-family: var(--font); }
+.refresh-btn:hover { opacity: 0.85; }
+.refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.refresh-toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; max-width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.3); z-index: 10000; animation: toastIn 0.3s ease; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.refresh-toast-title { font-weight: 600; margin-bottom: 6px; color: var(--text); font-size: 13px; }
+.refresh-toast-body { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.budget-indicator { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin-left: 12px; }
+.budget-bar { width: 60px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.budget-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.budget-fill.ok { background: var(--green); }
+.budget-fill.warn { background: var(--gold); }
+.budget-fill.danger { background: var(--red); }
+
 /* INFLUENCE GROUP HEADERS */
 .contact-group { margin-bottom: 24px; }
 .contact-group-hdr { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
@@ -864,6 +879,10 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   <div class="topnav-logo">Grid Dynamics <span>/ Intel Hub</span></div>
   <input class="topnav-search" id="acctSearch" placeholder="Search accounts..." oninput="filterAccounts(this.value)" />
   <div class="topnav-count" id="acctCount">0 accounts</div>
+  <span class="budget-indicator" id="budgetIndicator" style="display:none">
+    <span id="budgetText"></span>
+    <span class="budget-bar"><span class="budget-fill" id="budgetFill"></span></span>
+  </span>
 </nav>
 
 <div class="layout">
@@ -1092,6 +1111,8 @@ function renderAccountPanel(account) {
   html += '<div style="display:flex;align-items:flex-start;gap:16px">';
   html += '<div class="acct-name"><strong>' + name + '</strong></div>';
   html += '<div class="acct-actions">';
+  html += '<span class="stale-badge ' + getRefreshStalenessClass(a.last_refreshed_at) + '" id="refresh-badge-' + id + '">' + getRefreshStalenessLabel(a.last_refreshed_at) + '</span>';
+  html += '<button class="refresh-btn" id="refresh-btn-' + id + '" onclick="manualRefresh(\'' + id + '\')">Refresh Intelligence</button>';
   html += '<button class="acct-action-btn" onclick="openEditModal(\'' + id + '\')">Edit Account</button>';
   html += '<button class="acct-action-btn del" onclick="openRemoveModal(\'' + id + '\')">Remove Account</button>';
   html += '</div>';
@@ -1524,6 +1545,133 @@ function getStalenessLabel(researchedAt) {
   if (days < 30) return 'FRESH';
   if (days < 90) return 'AGING';
   return 'STALE';
+}
+
+// ---- Intelligence Refresh Staleness Helpers ----
+function getRefreshStalenessClass(lastRefreshedAt) {
+  if (!lastRefreshedAt) return 'stale-stale';
+  var now = new Date();
+  var refreshed = new Date(lastRefreshedAt);
+  var days = Math.floor((now - refreshed) / (1000 * 60 * 60 * 24));
+  if (days < 7) return 'stale-fresh';
+  if (days < 30) return 'stale-aging';
+  return 'stale-stale';
+}
+
+function getRefreshStalenessLabel(lastRefreshedAt) {
+  if (!lastRefreshedAt) return 'Never refreshed';
+  var now = new Date();
+  var refreshed = new Date(lastRefreshedAt);
+  var days = Math.floor((now - refreshed) / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Refreshed today';
+  if (days === 1) return 'Refreshed 1 day ago';
+  return 'Refreshed ' + days + ' days ago';
+}
+
+// ---- Manual Refresh ----
+async function manualRefresh(accountId) {
+  var btn = document.getElementById('refresh-btn-' + accountId);
+  var badge = document.getElementById('refresh-badge-' + accountId);
+  if (!btn) return;
+
+  // Loading state (D-18)
+  btn.disabled = true;
+  btn.textContent = 'Refreshing...';
+
+  try {
+    var resp = await fetch('/api/accounts/' + accountId + '/refresh', { method: 'POST' });
+    var data = await resp.json();
+
+    if (!resp.ok) {
+      throw new Error(data.error || 'Refresh failed');
+    }
+
+    // Update badge (D-18)
+    if (badge) {
+      badge.className = 'stale-badge ' + getRefreshStalenessClass(data.account.last_refreshed_at);
+      badge.textContent = getRefreshStalenessLabel(data.account.last_refreshed_at);
+    }
+
+    // Update account data in local array (D-20)
+    var idx = accounts.findIndex(function(a) { return a.id === accountId; });
+    if (idx !== -1) {
+      accounts[idx] = data.account;
+    }
+
+    // Re-render overview tab with updated context (D-20)
+    var overviewPane = document.getElementById(accountId + '-overview');
+    if (overviewPane) {
+      overviewPane.innerHTML = '<div class="hl"><div class="hl-label">Account Intelligence</div>' + escapeHtml(data.account.context || '').replace(/\n/g, '<br>') + '</div>';
+    }
+
+    // Update KPI values if changed (D-22)
+    var panel = document.getElementById('panel-' + accountId);
+    if (panel) {
+      var kpiVals = panel.querySelectorAll('.kpi-val');
+      if (kpiVals.length >= 2) {
+        kpiVals[0].textContent = data.account.revenue || '';
+        kpiVals[1].textContent = data.account.employees || '';
+      }
+    }
+
+    // Show changes summary toast
+    showRefreshToast(data.account.name, data.changes_summary);
+
+    // Refresh budget indicator
+    loadBudgetStatus();
+
+  } catch (e) {
+    showRefreshToast('Refresh Error', e.message || 'There was an error refreshing this account.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Refresh Intelligence';
+  }
+}
+
+function showRefreshToast(title, message) {
+  // Remove existing toast if any
+  var existing = document.querySelector('.refresh-toast');
+  if (existing) existing.remove();
+
+  var toast = document.createElement('div');
+  toast.className = 'refresh-toast';
+  toast.innerHTML = '<div class="refresh-toast-title">' + escapeHtml(title) + '</div><div class="refresh-toast-body">' + escapeHtml(message) + '</div>';
+  document.body.appendChild(toast);
+
+  // Auto-dismiss after 8 seconds
+  setTimeout(function() {
+    if (toast.parentNode) toast.remove();
+  }, 8000);
+
+  // Click to dismiss
+  toast.addEventListener('click', function() { toast.remove(); });
+}
+
+// ---- Budget Status Indicator ----
+async function loadBudgetStatus() {
+  try {
+    var resp = await fetch('/api/refresh/budget');
+    if (!resp.ok) return;
+    var data = await resp.json();
+
+    var indicator = document.getElementById('budgetIndicator');
+    var text = document.getElementById('budgetText');
+    var fill = document.getElementById('budgetFill');
+    if (!indicator || !text || !fill) return;
+
+    // Only show when usage exceeds 50%
+    if (data.pct < 50) {
+      indicator.style.display = 'none';
+      return;
+    }
+
+    indicator.style.display = 'inline-flex';
+    text.textContent = data.pct + '% budget';
+    fill.style.width = Math.min(data.pct, 100) + '%';
+    fill.className = 'budget-fill ' + (data.pct < 70 ? 'ok' : data.pct < 90 ? 'warn' : 'danger');
+  } catch (e) {
+    // Silently fail -- budget indicator is informational only
+  }
 }
 
 // ---- Contact Card Rendering (D-02) ----
@@ -3138,6 +3286,7 @@ function checkReviewPanelEmpty(accountId) {
 
 // ---- Init ----
 loadAccounts();
+loadBudgetStatus();
 </script>
 </body>
 </html>
