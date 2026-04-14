@@ -86,6 +86,12 @@ Phase 6: Briefing & Output                 [ ] Not started
 
 None
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260414-g35 | Add expand/collapse by industry category to sidebar navigation | 2026-04-14 | 3e28ddb | [260414-g35-add-expand-collapse-by-industry-category](./quick/260414-g35-add-expand-collapse-by-industry-category/) |
+
 ### Context Notes
 
 - Existing codebase: single `index.html` (~1,226 lines) + plain `server.js`, zero npm dependencies, Railway-hosted
