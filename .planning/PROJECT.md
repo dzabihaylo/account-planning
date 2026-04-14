@@ -28,7 +28,7 @@ Every pursuit team member can open this tool and get a current, actionable brief
 - [ ] Evolving pursuit approach — account strategy reflects cumulative learnings from what's been pitched, what landed, what didn't
 - ✓ Auto-refresh of public intelligence — financials, news, exec changes, tech signals updated periodically via AI + web sources — Validated in Phase 5: Intelligence Refresh
 - [ ] Private intel layer — user-contributed meeting notes, relationship context, internal signals alongside public data
-- [ ] Pursuit team briefing view — a consolidated, shareable summary of account status, strategy, and next steps
+- ✓ Pursuit team briefing view — a consolidated, shareable summary of account status, strategy, and next steps — Validated in Phase 6: Briefing & Output
 - [ ] Dynamic account management — add/remove/update accounts without manual HTML editing
 - [ ] Data persistence — account intelligence, chat history, pursuit logs survive page reloads and server restarts
 
@@ -85,4 +85,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-10 after initialization*
+*Last updated: 2026-04-14 after Phase 6 completion*
