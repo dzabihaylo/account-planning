@@ -574,6 +574,64 @@ function addTrigger({ account_id, tag, category, notes }) {
   return db.prepare('SELECT * FROM buying_triggers WHERE id = ?').get(result.lastInsertRowid);
 }
 
+// Refresh query helpers
+
+function getMonthlyBudget() {
+  var period = new Date().toISOString().substring(0, 7);
+  var row = db.prepare('SELECT * FROM refresh_budget WHERE period = ?').get(period);
+  if (row) return row;
+  return { period: period, tokens_used: 0, budget_limit: parseInt(process.env.REFRESH_TOKEN_BUDGET) || 500000 };
+}
+
+function recordRefreshTokens(accountId, tokensUsed, refreshType, changesSummary) {
+  var period = new Date().toISOString().substring(0, 7);
+  var limit = parseInt(process.env.REFRESH_TOKEN_BUDGET) || 500000;
+
+  db.prepare(`
+    INSERT INTO refresh_budget (period, tokens_used, budget_limit, updated_at)
+    VALUES (?, ?, ?, datetime('now'))
+    ON CONFLICT(period) DO UPDATE SET
+      tokens_used = tokens_used + excluded.tokens_used,
+      budget_limit = excluded.budget_limit,
+      updated_at = excluded.updated_at
+  `).run(period, tokensUsed, limit);
+
+  db.prepare(`
+    INSERT INTO refresh_log (account_id, tokens_used, refresh_type, changes_summary)
+    VALUES (?, ?, ?, ?)
+  `).run(accountId, tokensUsed, refreshType, changesSummary || null);
+}
+
+function updateAccountFromRefresh(id, fields) {
+  var setClauses = [];
+  var values = [];
+  var refreshFields = ['context', 'revenue', 'employees', 'last_refreshed_at'];
+
+  for (var i = 0; i < refreshFields.length; i++) {
+    var field = refreshFields[i];
+    if (fields[field] !== undefined && fields[field] !== null) {
+      setClauses.push(field + ' = ?');
+      values.push(fields[field]);
+    }
+  }
+
+  if (setClauses.length === 0) return db.prepare('SELECT * FROM accounts WHERE id = ?').get(id);
+
+  setClauses.push("updated_at = datetime('now')");
+  values.push(id);
+  db.prepare('UPDATE accounts SET ' + setClauses.join(', ') + ' WHERE id = ?').run(...values);
+  return db.prepare('SELECT * FROM accounts WHERE id = ?').get(id);
+}
+
+function getRefreshLog(accountId, limit) {
+  var lim = limit || 10;
+  return db.prepare('SELECT * FROM refresh_log WHERE account_id = ? ORDER BY created_at DESC LIMIT ?').all(accountId, lim);
+}
+
+function getAccountsByRefreshPriority() {
+  return db.prepare('SELECT * FROM accounts WHERE is_deleted = 0 ORDER BY last_refreshed_at IS NOT NULL, last_refreshed_at ASC').all();
+}
+
 module.exports = {
   db,
   getAccounts,
@@ -601,5 +659,10 @@ module.exports = {
   upsertStrategy,
   updateStrategyContent,
   getTriggers,
-  addTrigger
+  addTrigger,
+  getMonthlyBudget,
+  recordRefreshTokens,
+  updateAccountFromRefresh,
+  getRefreshLog,
+  getAccountsByRefreshPriority
 };
