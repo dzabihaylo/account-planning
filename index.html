@@ -2489,11 +2489,21 @@ function regenerateStrategy(accountId) {
 
 function briefingTextToHtml(text) {
   return text.split('\n').map(function(line) {
-    var escaped = escapeHtml(line);
-    if (escaped.indexOf('## ') === 0) {
-      return '<h3 class="briefing-section-header">' + escaped.substring(3) + '</h3>';
+    var trimmed = line.trim();
+    if (!trimmed) return '';
+    // Section headers
+    if (trimmed.indexOf('## ') === 0) {
+      return '<h3 class="briefing-section-header">' + escapeHtml(trimmed.substring(3)) + '</h3>';
     }
-    return escaped || '&nbsp;';
+    // Bullet points
+    if (trimmed.match(/^[-*]\s+/)) {
+      return '<li>' + escapeHtml(trimmed.replace(/^[-*]\s+/, '')) + '</li>';
+    }
+    // Numbered list items
+    if (trimmed.match(/^\d+\.\s+/)) {
+      return '<li>' + escapeHtml(trimmed.replace(/^\d+\.\s+/, '')) + '</li>';
+    }
+    return escapeHtml(trimmed);
   }).join('<br>');
 }
 
