@@ -8,6 +8,7 @@ const db = require('./db');
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 const PORT = process.env.PORT || 3000;
+var REFRESH_INTERVAL_MS = (parseInt(process.env.REFRESH_INTERVAL_HOURS) || 24) * 60 * 60 * 1000;
 
 const GD_CONTEXT = 'You are an account intelligence assistant for Grid Dynamics sales team. Grid Dynamics is a publicly traded enterprise AI and digital transformation consultancy. Key facts about Grid Dynamics: Founded 2006, HQ in Roseville CA, offices including Detroit MI. Dave Zabihaylo is Senior Director GTM Automotive based in Detroit, owns the Ford account, and is building the automotive go-to-market. Grid Dynamics has deep Google Cloud, AWS, Snowflake, and AI engineering expertise. Differentiation vs large Indian SIs (HCL, Cognizant, Infosys, Wipro): AI-native delivery, senior engineering talent, consultancy approach not body-shop, Google Cloud partnership. Answer concisely and with specific actionable sales intelligence. Do not use em dashes or double hyphens. Use bullet points only when listing multiple items.';
 
@@ -89,6 +90,151 @@ function readBody(req, res, callback) {
   req.on('end', () => {
     if (!req.destroyed) callback(body);
   });
+}
+
+function refreshAccount(accountId, refreshType) {
+  return new Promise(function(resolve, reject) {
+    var account = db.getAccount(accountId);
+    if (!account) { reject(new Error('Account not found: ' + accountId)); return; }
+
+    var systemPrompt = GD_CONTEXT + '\n\nAccount: ' + account.name + '\nSector: ' + account.sector + '\nHQ: ' + account.hq + '\nRevenue: ' + account.revenue + '\nEmployees: ' + account.employees;
+
+    var userMessage = 'You are updating account intelligence for Grid Dynamics sales team.\n\n'
+      + 'Current intelligence (as of last update):\n' + (account.context || '(No existing intelligence)') + '\n\n'
+      + 'Review this intelligence and generate an updated version reflecting your knowledge as of today.\n'
+      + 'Focus on identifying changes in:\n'
+      + '- Executive leadership (new CTO, CIO, CDO, CISO hires or departures)\n'
+      + '- Financial results (latest reported revenue, earnings, layoffs)\n'
+      + '- Strategic pivots (new partnerships, product launches, M&A activity)\n'
+      + '- Technology signals (new cloud contracts, platform decisions, AI initiatives)\n'
+      + '- Outsourcing landscape (new SI relationships, vendor changes)\n\n'
+      + 'Return ONLY valid JSON with no additional text, no markdown code fences:\n'
+      + '{\n'
+      + '  "context": "Full updated intelligence text (replace the existing context entirely)",\n'
+      + '  "revenue": "Updated revenue string if changed, or null if unchanged",\n'
+      + '  "employees": "Updated employee count string if changed, or null if unchanged",\n'
+      + '  "changes_summary": "2-3 sentence summary of what changed and why it matters for Grid Dynamics"\n'
+      + '}';
+
+    var payload = JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }]
+    });
+
+    var options = {
+      hostname: 'api.anthropic.com',
+      port: 443,
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    };
+
+    var proxy = https.request(options, function(apiRes) {
+      var data = '';
+      apiRes.on('data', function(chunk) { data += chunk; });
+      apiRes.on('end', function() {
+        try {
+          var parsed_resp = JSON.parse(data);
+          var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
+          var inputTokens = parsed_resp.usage && parsed_resp.usage.input_tokens || 0;
+          var outputTokens = parsed_resp.usage && parsed_resp.usage.output_tokens || 0;
+          var totalTokens = inputTokens + outputTokens;
+
+          // Parse AI response JSON (with code-fence fallback)
+          var refreshData;
+          try {
+            refreshData = JSON.parse(text);
+          } catch (e2) {
+            var fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (fenceMatch) {
+              refreshData = JSON.parse(fenceMatch[1].trim());
+            } else {
+              throw new Error('Failed to parse refresh response as JSON');
+            }
+          }
+
+          // Update account (skip null fields per D-22)
+          var now = new Date().toISOString();
+          var updated = db.updateAccountFromRefresh(accountId, {
+            context: refreshData.context || null,
+            revenue: refreshData.revenue || null,
+            employees: refreshData.employees || null,
+            last_refreshed_at: now
+          });
+
+          // Record token usage
+          db.recordRefreshTokens(accountId, totalTokens, refreshType, refreshData.changes_summary || null);
+
+          console.log('  Refresh complete: ' + account.name + ' (' + totalTokens + ' tokens, ' + refreshType + ')');
+          resolve({
+            account: updated,
+            changes_summary: refreshData.changes_summary || 'No changes summary provided',
+            tokens_used: totalTokens
+          });
+        } catch (e) {
+          console.error('  Refresh parse error for ' + account.name + ':', e.message);
+          // Still update last_refreshed_at to prevent retry loops
+          db.updateAccountFromRefresh(accountId, { last_refreshed_at: new Date().toISOString() });
+          resolve({
+            account: db.getAccount(accountId),
+            changes_summary: 'Refresh completed but response could not be parsed: ' + e.message,
+            tokens_used: 0
+          });
+        }
+      });
+    });
+
+    proxy.on('error', function(e) {
+      console.error('  Refresh API error for ' + (account ? account.name : accountId) + ':', e.message);
+      reject(e);
+    });
+
+    proxy.write(payload);
+    proxy.end();
+  });
+}
+
+async function runAutoRefresh() {
+  console.log('Auto-refresh: starting cycle');
+  var accounts = db.getAccountsByRefreshPriority();
+
+  for (var i = 0; i < accounts.length; i++) {
+    // Re-check budget before each account (per Research pitfall 2)
+    var budget = db.getMonthlyBudget();
+    var limit = parseInt(process.env.REFRESH_TOKEN_BUDGET) || 500000;
+    if (budget.tokens_used >= limit) {
+      console.log('  Auto-refresh: budget exhausted for ' + budget.period + ' (' + budget.tokens_used + '/' + limit + ' tokens). Stopping.');
+      break;
+    }
+
+    try {
+      await refreshAccount(accounts[i].id, 'auto');
+    } catch (e) {
+      console.error('  Auto-refresh error for ' + accounts[i].name + ':', e.message);
+      // Continue to next account on error
+    }
+  }
+
+  console.log('Auto-refresh: cycle complete');
+}
+
+function startRefreshScheduler() {
+  // D-07: Refresh runs only when the server is running, no catch-up for missed intervals
+  // D-04: setInterval with configurable period
+  // D-05: Default 24 hours
+  console.log('Refresh scheduler started: interval = ' + (REFRESH_INTERVAL_MS / 3600000) + ' hours');
+  setInterval(function() {
+    runAutoRefresh().catch(function(e) {
+      console.error('Auto-refresh failed:', e.message);
+    });
+  }, REFRESH_INTERVAL_MS);
 }
 
 const server = http.createServer((req, res) => {
@@ -1083,4 +1229,5 @@ server.listen(PORT, () => {
   console.log('  Running at http://localhost:' + PORT);
   console.log('  Password protection: enabled');
   console.log('');
+  startRefreshScheduler();
 });
