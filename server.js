@@ -412,6 +412,55 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Manual refresh — POST /api/accounts/:id/refresh
+  var refreshMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/refresh$/);
+  if (req.method === 'POST' && refreshMatch) {
+    if (!isAuthenticated(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
+    var refreshAccountId = refreshMatch[1];
+    var acct = db.getAccount(refreshAccountId);
+    if (!acct) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Account not found' }));
+      return;
+    }
+
+    // D-11, D-19: Manual refresh bypasses the budget gate
+    refreshAccount(refreshAccountId, 'manual').then(function(result) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    }).catch(function(e) {
+      console.error('Manual refresh error:', e.message);
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Refresh failed: ' + e.message }));
+    });
+    return;
+  }
+
+  // Budget status — GET /api/refresh/budget
+  if (req.method === 'GET' && parsed.pathname === '/api/refresh/budget') {
+    if (!isAuthenticated(req)) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
+
+    var budget = db.getMonthlyBudget();
+    var pct = budget.budget_limit > 0 ? Math.round((budget.tokens_used / budget.budget_limit) * 100) : 0;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      period: budget.period,
+      tokens_used: budget.tokens_used,
+      budget_limit: budget.budget_limit,
+      pct: pct
+    }));
+    return;
+  }
+
   // Contact API routes
   const contactsMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/contacts$/);
   const contactMatch = parsed.pathname.match(/^\/api\/contacts\/(\d+)$/);
