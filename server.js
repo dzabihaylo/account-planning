@@ -79,16 +79,19 @@ const MAX_BODY = 1024 * 1024; // 1 MB
 
 function readBody(req, res, callback) {
   let body = '';
+  let bodyTooLarge = false;
   req.on('data', chunk => {
+    if (bodyTooLarge) return;
     body += chunk;
     if (body.length > MAX_BODY) {
+      bodyTooLarge = true;
       res.writeHead(413, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Request body too large' }));
       req.destroy();
     }
   });
   req.on('end', () => {
-    if (!req.destroyed) callback(body);
+    if (!req.destroyed && !bodyTooLarge) callback(body);
   });
 }
 
