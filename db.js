@@ -156,6 +156,36 @@ if (version < 4) {
   migrate4();
 }
 
+if (version < 5) {
+  const migrate5 = db.transaction(() => {
+    db.exec(`
+      ALTER TABLE accounts ADD COLUMN last_refreshed_at TEXT;
+
+      CREATE TABLE IF NOT EXISTS refresh_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        tokens_used INTEGER NOT NULL DEFAULT 0,
+        refresh_type TEXT NOT NULL CHECK(refresh_type IN ('auto', 'manual')),
+        changes_summary TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_refresh_log_account ON refresh_log(account_id);
+
+      CREATE TABLE IF NOT EXISTS refresh_budget (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        period TEXT UNIQUE NOT NULL,
+        tokens_used INTEGER NOT NULL DEFAULT 0,
+        budget_limit INTEGER NOT NULL DEFAULT 500000,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+
+      PRAGMA user_version = 5;
+    `);
+  });
+  migrate5();
+}
+
 // Seed data
 const count = db.prepare('SELECT COUNT(*) AS cnt FROM accounts').get().cnt;
 
