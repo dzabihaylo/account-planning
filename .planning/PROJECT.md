@@ -26,7 +26,7 @@ Every pursuit team member can open this tool and get a current, actionable brief
 - [ ] Outreach strategy per contact — why they'd care about Grid Dynamics, warm paths to reach them, personalized talking points
 - [ ] Pursuit activity log via AI conversation — debrief after meetings and the AI updates account strategy
 - [ ] Evolving pursuit approach — account strategy reflects cumulative learnings from what's been pitched, what landed, what didn't
-- [ ] Auto-refresh of public intelligence — financials, news, exec changes, tech signals updated periodically via AI + web sources
+- ✓ Auto-refresh of public intelligence — financials, news, exec changes, tech signals updated periodically via AI + web sources — Validated in Phase 5: Intelligence Refresh
 - [ ] Private intel layer — user-contributed meeting notes, relationship context, internal signals alongside public data
 - [ ] Pursuit team briefing view — a consolidated, shareable summary of account status, strategy, and next steps
 - [ ] Dynamic account management — add/remove/update accounts without manual HTML editing
