@@ -45,10 +45,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Intelligence Refresh
 
-- [ ] **REFR-01**: Public intelligence auto-refreshes periodically via AI + web sources (financials, news, exec changes)
+- [x] **REFR-01**: Public intelligence auto-refreshes periodically via AI + web sources (financials, news, exec changes)
 - [x] **REFR-02**: Auto-refresh has a token budget gate to prevent runaway costs
 - [x] **REFR-03**: Each account shows when intelligence was last refreshed
-- [ ] **REFR-04**: User can trigger a manual refresh for any individual account
+- [x] **REFR-04**: User can trigger a manual refresh for any individual account
 
 ### Briefing & Output
 
@@ -115,10 +115,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STRT-02 | Phase 4 | Pending |
 | STRT-03 | Phase 4 | Pending |
 | STRT-04 | Phase 4 | Pending |
-| REFR-01 | Phase 5 | Pending |
+| REFR-01 | Phase 5 | Complete |
 | REFR-02 | Phase 5 | Complete |
 | REFR-03 | Phase 5 | Complete |
-| REFR-04 | Phase 5 | Pending |
+| REFR-04 | Phase 5 | Complete |
 | BREF-01 | Phase 6 | Pending |
 | BREF-02 | Phase 6 | Pending |
 
