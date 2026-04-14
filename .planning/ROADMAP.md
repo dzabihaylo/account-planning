@@ -121,8 +121,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — AI briefing tab: migration v6 (briefings table), GET/POST API endpoints, Briefing tab with generate/regenerate/render lifecycle
-- [ ] 06-02-PLAN.md — Print-ready output: @media print CSS block, visual verification checkpoint
+- [x] 06-01-PLAN.md — AI briefing tab: migration v6 (briefings table), GET/POST API endpoints, Briefing tab with generate/regenerate/render lifecycle
+- [x] 06-02-PLAN.md — Print-ready output: @media print CSS block, visual verification checkpoint
 
 **UI hint**: yes
 
