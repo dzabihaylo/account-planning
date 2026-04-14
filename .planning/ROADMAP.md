@@ -104,10 +104,10 @@ Plans:
   2. Auto-refresh stops (or skips accounts) when a configurable token budget threshold is reached for the period
   3. Each account shows a "last refreshed" timestamp so users know how current the data is
   4. User can trigger a manual refresh for any individual account at any time and see updated data
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 05-01-PLAN.md — Database schema v5 (refresh_log, refresh_budget tables, last_refreshed_at column) and refresh query helpers
+- [x] 05-01-PLAN.md — Database schema v5 (refresh_log, refresh_budget tables, last_refreshed_at column) and refresh query helpers
 - [ ] 05-02-PLAN.md — Refresh engine: refreshAccount function, auto-refresh scheduler with budget gate, manual refresh and budget API endpoints
 - [ ] 05-03-PLAN.md — Refresh UI: staleness badges, refresh button, loading state, changes toast, budget indicator
 
@@ -131,7 +131,7 @@ Plans:
 | 2. Contact Intelligence | 0/3 | Planning complete | - |
 | 3. Pursuit Tracking | 0/3 | Planning complete | - |
 | 4. Pursuit Strategy | 0/3 | Planning complete | - |
-| 5. Intelligence Refresh | 0/3 | Planning complete | - |
+| 5. Intelligence Refresh | 1/3 | In Progress|  |
 | 6. Briefing & Output | 0/? | Not started | - |
 
 ---
