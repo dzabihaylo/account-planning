@@ -663,6 +663,18 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   font-size: 13px;
 }
 
+/* Briefing tab */
+.briefing-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+.briefing-meta { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-bottom: 12px; letter-spacing: 0.04em; }
+.briefing-content { font-size: 13px; line-height: 1.7; color: var(--text); }
+.briefing-section-header { font-size: 15px; font-weight: 500; color: var(--text); margin-top: 16px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.briefing-section-header:first-child { margin-top: 0; }
+.briefing-actions { display: flex; gap: 8px; margin-top: 14px; }
+.briefing-actions button { border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: var(--font); font-size: 12px; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+.briefing-actions button:hover { background: var(--card, #1A2236); }
+.briefing-actions button.primary { background: #3B82F6; border-color: #3B82F6; color: white; }
+.briefing-actions button.primary:hover { background: #2563EB; }
+
 /* Private Intel */
 .intel-form {
   display: flex;
@@ -1136,6 +1148,7 @@ function renderAccountPanel(account) {
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'contacts\',this)">Contacts</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'activity\',this)">Activity</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'strategy\',this)">Strategy</button>';
+  html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'briefing\',this)">Briefing</button>';
   html += '<button class="acct-tab" onclick="showTab(\'' + id + '\',\'ai\',this)">Ask AI</button>';
   html += '</div>';
 
@@ -1153,6 +1166,8 @@ function renderAccountPanel(account) {
   html += '</div>';
   // Strategy tab
   html += '<div class="tab-pane" id="' + id + '-strategy"><div id="' + id + '-strategy-panel"></div></div>';
+  // Briefing tab
+  html += '<div class="tab-pane" id="' + id + '-briefing"><div id="' + id + '-briefing-panel"></div></div>';
   // AI tab
   html += '<div class="tab-pane" id="' + id + '-ai"><div id="' + id + '-ai-panel"></div></div>';
   html += '</div>';
@@ -1223,6 +1238,13 @@ function showTab(account, tab, btn) {
     if (strategyPanel && !strategyPanel.dataset.loaded) {
       strategyPanel.dataset.loaded = '1';
       loadStrategyTab(account);
+    }
+  }
+  if (tab === 'briefing') {
+    var briefingPanel = document.getElementById(account + '-briefing-panel');
+    if (briefingPanel && !briefingPanel.dataset.loaded) {
+      briefingPanel.dataset.loaded = '1';
+      loadBriefingTab(account);
     }
   }
 }
@@ -2429,6 +2451,95 @@ function regenerateStrategy(accountId) {
     if (!confirm('This will replace your edits. Continue?')) return;
   }
   generateStrategy(accountId);
+}
+
+// ---- Briefing Tab ----
+
+function briefingTextToHtml(text) {
+  return text.split('\n').map(function(line) {
+    var escaped = escapeHtml(line);
+    if (escaped.indexOf('## ') === 0) {
+      return '<h3 class="briefing-section-header">' + escaped.substring(3) + '</h3>';
+    }
+    return escaped || '&nbsp;';
+  }).join('<br>');
+}
+
+function loadBriefingTab(accountId) {
+  var panel = document.getElementById(accountId + '-briefing-panel');
+  if (!panel) return;
+  var safeId = escapeHtml(accountId);
+  var html = '<div id="' + safeId + '-briefing-card"><div class="strategy-loading">Loading briefing...</div></div>';
+  html += '<div class="briefing-actions" id="' + safeId + '-briefing-actions" style="display:none">';
+  html += '<button class="primary" onclick="regenerateBriefing(\'' + safeId + '\')">Regenerate Briefing</button>';
+  html += '<button onclick="window.print()">Print / Save as PDF</button>';
+  html += '</div>';
+  panel.innerHTML = html;
+  loadBriefing(accountId);
+}
+
+function loadBriefing(accountId) {
+  var cardEl = document.getElementById(accountId + '-briefing-card');
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/briefing')
+    .then(function(r) {
+      if (r.status === 404) {
+        if (cardEl) cardEl.innerHTML = '<div class="strategy-loading">Generating briefing...</div>';
+        generateBriefing(accountId);
+        return null;
+      }
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(data) {
+      if (data) renderBriefing(accountId, data);
+    })
+    .catch(function() {
+      if (cardEl) cardEl.innerHTML = '<div class="strategy-empty">Failed to load briefing.</div>';
+    });
+}
+
+function generateBriefing(accountId) {
+  var cardEl = document.getElementById(accountId + '-briefing-card');
+  fetch('/api/accounts/' + encodeURIComponent(accountId) + '/briefing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Server error');
+      return r.json();
+    })
+    .then(function(data) {
+      renderBriefing(accountId, data);
+    })
+    .catch(function() {
+      if (cardEl) {
+        cardEl.innerHTML = '<div class="strategy-empty">Failed to generate briefing. ' +
+          '<button style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline" ' +
+          'onclick="generateBriefing(\'' + escapeHtml(accountId) + '\')">Try again</button></div>';
+      }
+    });
+}
+
+function renderBriefing(accountId, briefing) {
+  var cardEl = document.getElementById(accountId + '-briefing-card');
+  var actionsEl = document.getElementById(accountId + '-briefing-actions');
+  if (!cardEl) return;
+  var dateStr = briefing.generated_at ? 'Generated ' + formatActivityDate(briefing.generated_at) : '';
+  var contentHtml = briefingTextToHtml(briefing.content);
+  var html = '<div class="briefing-card">';
+  html += '<div class="briefing-meta">' + escapeHtml(dateStr) + '</div>';
+  html += '<div class="briefing-content">' + contentHtml + '</div>';
+  html += '</div>';
+  cardEl.innerHTML = html;
+  if (actionsEl) actionsEl.style.display = 'flex';
+}
+
+function regenerateBriefing(accountId) {
+  var cardEl = document.getElementById(accountId + '-briefing-card');
+  if (cardEl) cardEl.innerHTML = '<div class="strategy-loading">Regenerating briefing...</div>';
+  var actionsEl = document.getElementById(accountId + '-briefing-actions');
+  if (actionsEl) actionsEl.style.display = 'none';
+  generateBriefing(accountId);
 }
 
 function submitIntel(accountId) {
