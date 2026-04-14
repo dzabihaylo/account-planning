@@ -908,30 +908,37 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
         <label class="form-label">Company name</label>
         <input class="form-input" id="modalName" placeholder="e.g. Acme Corporation" />
       </div>
-      <div class="form-group">
-        <label class="form-label">Sector</label>
-        <input class="form-input" id="modalSector" placeholder="e.g. Automotive OEM" />
+      <div id="modalDetailFields">
+        <div class="form-group">
+          <label class="form-label">Sector</label>
+          <input class="form-input" id="modalSector" placeholder="e.g. Automotive OEM" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Annual revenue (e.g. $12.6B)</label>
+          <input class="form-input" id="modalRevenue" placeholder="e.g. $12.6B" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Employees (e.g. 72,000)</label>
+          <input class="form-input" id="modalEmployees" placeholder="e.g. 72,000" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Headquarters city</label>
+          <input class="form-input" id="modalHQ" placeholder="e.g. Detroit, Michigan" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">AI context (account intelligence for Claude)</label>
+          <textarea class="form-input" id="modalContext" rows="4" placeholder="Key facts, technology stack, strategic signals..."></textarea>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Annual revenue (e.g. $12.6B)</label>
-        <input class="form-input" id="modalRevenue" placeholder="e.g. $12.6B" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Employees (e.g. 72,000)</label>
-        <input class="form-input" id="modalEmployees" placeholder="e.g. 72,000" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Headquarters city</label>
-        <input class="form-input" id="modalHQ" placeholder="e.g. Detroit, Michigan" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">AI context (account intelligence for Claude)</label>
-        <textarea class="form-input" id="modalContext" rows="4" placeholder="Key facts, technology stack, strategic signals..."></textarea>
+      <div id="modalResearchStatus" style="display:none;padding:12px;background:var(--surface);border-radius:8px;margin-top:8px">
+        <div style="font-size:13px;color:var(--text)">Researching <strong id="modalResearchName"></strong>...</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">AI is gathering company details, financials, technology stack, and strategic signals.</div>
       </div>
       <div class="form-error" id="modalError"></div>
     </div>
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeModal()">Discard Changes</button>
+      <button class="btn btn-primary" id="modalResearchBtn" onclick="addAndResearch()" style="display:none">Add & Research</button>
       <button class="btn btn-primary" id="modalSaveBtn" onclick="saveAccount()">Save Account</button>
     </div>
   </div>
@@ -1374,7 +1381,6 @@ function renderEmptyState() {
 function openAddModal() {
   editingAccountId = null;
   document.getElementById('modalTitle').textContent = 'Add Account';
-  document.getElementById('modalSaveBtn').textContent = 'Save Account';
   document.getElementById('modalAccountId').value = '';
   document.getElementById('modalName').value = '';
   document.getElementById('modalSector').value = '';
@@ -1382,8 +1388,57 @@ function openAddModal() {
   document.getElementById('modalEmployees').value = '';
   document.getElementById('modalHQ').value = '';
   document.getElementById('modalContext').value = '';
+  document.getElementById('modalDetailFields').style.display = 'none';
+  document.getElementById('modalResearchStatus').style.display = 'none';
+  document.getElementById('modalResearchBtn').style.display = '';
+  document.getElementById('modalSaveBtn').style.display = 'none';
   hideModalError();
   document.getElementById('accountModal').classList.add('show');
+}
+
+// ---- Add & Research: create account with just a name, then AI populates everything ----
+async function addAndResearch() {
+  var name = document.getElementById('modalName').value.trim();
+  if (!name) { showModalError('Company name is required.'); return; }
+
+  var btn = document.getElementById('modalResearchBtn');
+  btn.textContent = 'Researching...';
+  btn.disabled = true;
+  hideModalError();
+  document.getElementById('modalResearchName').textContent = name;
+  document.getElementById('modalResearchStatus').style.display = '';
+
+  try {
+    // Step 1: Create the account with just the name
+    var createRes = await fetch('/api/accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name })
+    });
+    if (!createRes.ok) throw new Error('Failed to create account');
+    var created = await createRes.json();
+
+    // Step 2: Trigger AI research via the refresh endpoint
+    var refreshRes = await fetch('/api/accounts/' + created.id + '/refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    if (!refreshRes.ok) throw new Error('AI research failed');
+    var refreshData = await refreshRes.json();
+
+    closeModal();
+    document.getElementById('mainContent').innerHTML = '';
+    await loadAccounts();
+    showAccount(created.id);
+    showRefreshToast(refreshData.changes_summary || 'Account researched and populated by AI.');
+  } catch (e) {
+    showModalError("Couldn't research account: " + e.message);
+  } finally {
+    btn.textContent = 'Add & Research';
+    btn.disabled = false;
+    document.getElementById('modalResearchStatus').style.display = 'none';
+  }
 }
 
 // ---- Modal: Edit Account ----
@@ -1393,6 +1448,10 @@ function openEditModal(id) {
   editingAccountId = id;
   document.getElementById('modalTitle').textContent = 'Edit Account';
   document.getElementById('modalSaveBtn').textContent = 'Save Changes';
+  document.getElementById('modalSaveBtn').style.display = '';
+  document.getElementById('modalResearchBtn').style.display = 'none';
+  document.getElementById('modalDetailFields').style.display = '';
+  document.getElementById('modalResearchStatus').style.display = 'none';
   document.getElementById('modalAccountId').value = id;
   document.getElementById('modalName').value = acct.name || '';
   document.getElementById('modalSector').value = acct.sector || '';
