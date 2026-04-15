@@ -67,6 +67,18 @@ Every pursuit team member can open this tool and get a current, actionable brief
 | Auto-refresh public data + manual private intel | Public data can be automated; internal relationship context requires human input | — Pending |
 | Data persistence needed | Current in-memory approach doesn't survive reloads; pursuit logs and strategy must persist | — Pending |
 
+## Current Milestone: v2.0 Production Hardening & UI Polish
+
+**Goal:** Make the tool production-grade and visually consistent — protect the data, handle errors gracefully, clean up the UI, and give users control over account categorization.
+
+**Target features:**
+- SQLite backup strategy (protect account data on Railway Volume)
+- Error monitoring and graceful error handling for AI endpoints
+- Rate limiting on AI endpoints (prevent abuse/runaway costs)
+- UI consistency pass across all tabs (Overview, Contacts, Activity, Strategy, Briefing, Ask AI)
+- Reclassify/recategorize accounts (move an account to a different industry group)
+- Rename existing categories (change industry group names)
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -85,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-14 after Phase 6 completion*
+*Last updated: 2026-04-15 after v2.0 milestone start*
