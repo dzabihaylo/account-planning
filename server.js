@@ -1557,6 +1557,14 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // GET /api/categories - list distinct sector values for category dropdown
+  if (req.method === 'GET' && parsed.pathname === '/api/categories') {
+    var sectors = db.getDistinctSectors();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(sectors));
+    return;
+  }
+
   // Serve the HTML app
   if (req.method === 'GET' && (parsed.pathname === '/' || parsed.pathname === '/index.html')) {
     const filePath = path.join(__dirname, 'index.html');

@@ -656,6 +656,14 @@ function getAccountsByRefreshPriority() {
   return db.prepare('SELECT * FROM accounts WHERE is_deleted = 0 ORDER BY last_refreshed_at IS NOT NULL, last_refreshed_at ASC').all();
 }
 
+// Categories helper
+
+function getDistinctSectors() {
+  return db.prepare(
+    "SELECT DISTINCT sector FROM accounts WHERE is_deleted = 0 AND sector != '' ORDER BY sector"
+  ).all().map(function(row) { return row.sector; });
+}
+
 // Briefing query helpers
 
 function getBriefing(accountId) {
@@ -709,5 +717,6 @@ module.exports = {
   getRefreshLog,
   getAccountsByRefreshPriority,
   getBriefing,
-  saveBriefing
+  saveBriefing,
+  getDistinctSectors
 };

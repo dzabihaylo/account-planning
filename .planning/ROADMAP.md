@@ -40,13 +40,8 @@ Plans:
   1. Spacing, typography, card styles, and color usage are visually consistent when switching between Overview, Contacts, Activity, Strategy, Briefing, and Ask AI tabs for any account
   2. User can open an account, select "Move to category," pick a different industry group from a list, and the account immediately appears under the new group in the sidebar
   3. User can select an industry category from the sidebar, rename it inline, and the new name is reflected everywhere — sidebar heading, any account display that references it — after page reload
-**Plans**: 3 plans
+**Plans**: TBD
 **UI hint**: yes
-
-Plans:
-- [ ] 08-01-PLAN.md — CSS normalization + shared class definitions (visual consistency)
-- [ ] 08-02-PLAN.md — Category dropdown in edit modal (account recategorization)
-- [ ] 08-03-PLAN.md — Inline category rename on sidebar headers + toast component
 
 ---
 
@@ -55,7 +50,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. Server Hardening | 0/2 | Planning complete | - |
-| 8. UI Polish | 0/3 | Planning complete | - |
+| 8. UI Polish | 0/? | Not started | - |
 
 ---
 
@@ -102,4 +97,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-04-17*
-*Last updated: 2026-04-17 — Phase 8 plans created*
+*Last updated: 2026-04-17 — Phase 7 plans created*
