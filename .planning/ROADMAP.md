@@ -29,8 +29,8 @@
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Persistent logger module + SQLite backup scheduler
-- [ ] 07-02-PLAN.md — Rate limiting + AI error handling + frontend error display
+- [x] 07-01-PLAN.md — Persistent logger module + SQLite backup scheduler
+- [x] 07-02-PLAN.md — Rate limiting + AI error handling + frontend error display
 
 ### Phase 8: UI Polish
 **Goal**: The UI looks and feels consistent across every tab, and users can reorganize accounts into categories without touching code
