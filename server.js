@@ -10,7 +10,7 @@ const { startBackupScheduler } = require('./backup');
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 const PORT = process.env.PORT || 3000;
-var REFRESH_INTERVAL_MS = (parseInt(process.env.REFRESH_INTERVAL_HOURS) || 24) * 60 * 60 * 1000;
+var REFRESH_INTERVAL_MS = Math.max(1, parseInt(process.env.REFRESH_INTERVAL_HOURS) || 24) * 60 * 60 * 1000;
 const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS) || 55000;
 
 const rateLimitMap = new Map();

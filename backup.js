@@ -64,7 +64,7 @@ function runBackup(dbPath) {
 }
 
 function startBackupScheduler(dbPath) {
-  var intervalHours = parseInt(process.env.BACKUP_INTERVAL_HOURS) || 6;
+  var intervalHours = Math.max(1, parseInt(process.env.BACKUP_INTERVAL_HOURS) || 6);
   var intervalMs = intervalHours * 60 * 60 * 1000;
 
   logger.log('info', 'backup', 'SCHEDULER_STARTED', 'Backup interval: ' + intervalHours + ' hours', null);
