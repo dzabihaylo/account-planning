@@ -1565,6 +1565,39 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // PUT /api/categories/rename - atomically rename an industry category
+  if (req.method === 'PUT' && parsed.pathname === '/api/categories/rename') {
+    readBody(req, res, function(body) {
+      var data;
+      try { data = JSON.parse(body); } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON' }));
+        return;
+      }
+      if (!data.oldName || !data.newName || typeof data.oldName !== 'string' || typeof data.newName !== 'string') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'oldName and newName are required strings' }));
+        return;
+      }
+      var trimmedOld = data.oldName.trim();
+      var trimmedNew = data.newName.trim();
+      if (!trimmedOld || !trimmedNew) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Category names cannot be empty' }));
+        return;
+      }
+      try {
+        var result = db.renameCategory(trimmedOld, trimmedNew);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, count: result.count }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Rename failed' }));
+      }
+    });
+    return;
+  }
+
   // Serve the HTML app
   if (req.method === 'GET' && (parsed.pathname === '/' || parsed.pathname === '/index.html')) {
     const filePath = path.join(__dirname, 'index.html');

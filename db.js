@@ -664,6 +664,18 @@ function getDistinctSectors() {
   ).all().map(function(row) { return row.sector; });
 }
 
+function renameCategory(oldName, newName) {
+  var rename = db.transaction(function() {
+    db.prepare(
+      "UPDATE accounts SET sector = ?, updated_at = datetime('now') WHERE sector = ? AND is_deleted = 0"
+    ).run(newName, oldName);
+  });
+  rename();
+  return db.prepare(
+    'SELECT COUNT(*) as count FROM accounts WHERE sector = ? AND is_deleted = 0'
+  ).get(newName);
+}
+
 // Briefing query helpers
 
 function getBriefing(accountId) {
@@ -718,5 +730,6 @@ module.exports = {
   getAccountsByRefreshPriority,
   getBriefing,
   saveBriefing,
-  getDistinctSectors
+  getDistinctSectors,
+  renameCategory
 };
