@@ -11,6 +11,10 @@ const API_KEY = process.env.ANTHROPIC_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD;
 const PORT = process.env.PORT || 3000;
 var REFRESH_INTERVAL_MS = (parseInt(process.env.REFRESH_INTERVAL_HOURS) || 24) * 60 * 60 * 1000;
+const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS) || 55000;
+
+const rateLimitMap = new Map();
+const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_PER_MINUTE) || 10;
 
 const GD_CONTEXT = 'You are an account intelligence assistant for Grid Dynamics sales team. Grid Dynamics is a publicly traded enterprise AI and digital transformation consultancy. Key facts about Grid Dynamics: Founded 2006, HQ in Roseville CA, offices including Detroit MI. Dave Zabihaylo is Senior Director GTM Automotive based in Detroit, owns the Ford account, and is building the automotive go-to-market. Grid Dynamics has deep Google Cloud, AWS, Snowflake, and AI engineering expertise. Differentiation vs large Indian SIs (HCL, Cognizant, Infosys, Wipro): AI-native delivery, senior engineering talent, consultancy approach not body-shop, Google Cloud partnership. Answer concisely and with specific actionable sales intelligence. Do not use em dashes or double hyphens. Use bullet points only when listing multiple items.';
 
@@ -22,6 +26,26 @@ if (!API_KEY) {
 if (!APP_PASSWORD) {
   console.error('ERROR: APP_PASSWORD environment variable is not set.');
   process.exit(1);
+}
+
+function checkRateLimit(req, res) {
+  var cookies = getCookies(req);
+  var sessionId = cookies['gd_auth'] || 'anonymous';
+  var now = Date.now();
+  var windowStart = now - 60000;
+  var timestamps = (rateLimitMap.get(sessionId) || []).filter(function(t) { return t > windowStart; });
+  if (timestamps.length >= RATE_LIMIT) {
+    logger.log('warn', req.url, 'RATE_LIMITED', 'Rate limit exceeded for session', null);
+    res.writeHead(429, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      error: 'Too many requests. Please wait before trying again.',
+      code: 'RATE_LIMITED'
+    }));
+    return false;
+  }
+  timestamps.push(now);
+  rateLimitMap.set(sessionId, timestamps);
+  return true;
 }
 
 function getCookies(req) {
@@ -133,6 +157,7 @@ function refreshAccount(accountId, refreshType) {
       port: 443,
       path: '/v1/messages',
       method: 'POST',
+      timeout: AI_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY,
@@ -141,6 +166,7 @@ function refreshAccount(accountId, refreshType) {
       }
     };
 
+    var requestTimedOut = false;
     var proxy = https.request(options, function(apiRes) {
       var data = '';
       apiRes.on('data', function(chunk) { data += chunk; });
@@ -196,8 +222,13 @@ function refreshAccount(accountId, refreshType) {
       });
     });
 
+    proxy.on('timeout', function() {
+      requestTimedOut = true;
+      proxy.destroy(new Error('Request timed out'));
+    });
+
     proxy.on('error', function(e) {
-      logger.log('error', '/api/refresh', 'API_ERROR', 'Refresh API error for ' + (account ? account.name : accountId) + ': ' + e.message, accountId);
+      logger.log('error', '/api/refresh', requestTimedOut ? 'TIMEOUT' : 'API_ERROR', 'Refresh API error for ' + (account ? account.name : accountId) + ': ' + e.message, accountId);
       reject(e);
     });
 
@@ -420,6 +451,7 @@ const server = http.createServer((req, res) => {
   // Manual refresh — POST /api/accounts/:id/refresh
   var refreshMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/refresh$/);
   if (req.method === 'POST' && refreshMatch) {
+    if (!checkRateLimit(req, res)) return;
     var refreshAccountId = refreshMatch[1];
     var acct = db.getAccount(refreshAccountId);
     if (!acct) {
@@ -435,7 +467,7 @@ const server = http.createServer((req, res) => {
     }).catch(function(e) {
       logger.log('error', '/api/refresh', 'MANUAL_REFRESH_ERROR', e.message, refreshAccountId);
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Refresh failed: ' + e.message }));
+      res.end(JSON.stringify({ error: 'The AI service is temporarily unavailable. Please try again in a moment.', code: 'API_ERROR' }));
     });
     return;
   }
@@ -462,6 +494,7 @@ const server = http.createServer((req, res) => {
 
   // POST /api/contacts/:id/generate - AI generate rationale + warm path (must be before generic contactMatch)
   if (req.method === 'POST' && generateMatch) {
+    if (!checkRateLimit(req, res)) return;
     const contactId = parseInt(generateMatch[1]);
     const contact = db.getContact(contactId);
     if (!contact) {
@@ -491,6 +524,7 @@ const server = http.createServer((req, res) => {
       port: 443,
       path: '/v1/messages',
       method: 'POST',
+      timeout: AI_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY,
@@ -499,15 +533,17 @@ const server = http.createServer((req, res) => {
       }
     };
 
+    var requestTimedOut = false;
     const proxy = https.request(options, (apiRes) => {
       let data = '';
       apiRes.on('data', chunk => { data += chunk; });
       apiRes.on('end', () => {
+        if (res.headersSent) return;
         try {
           const parsed_resp = JSON.parse(data);
           if (apiRes.statusCode !== 200) {
-            res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
-            res.end(data);
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'UPSTREAM_ERROR' }));
             return;
           }
           const text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
@@ -525,16 +561,26 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(updated));
         } catch (e) {
+          logger.log('error', '/api/contacts/generate', 'PARSE_ERROR', e.message, null);
           res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+          res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'API_ERROR' }));
         }
       });
     });
 
+    proxy.on('timeout', function() {
+      requestTimedOut = true;
+      proxy.destroy(new Error('Request timed out'));
+    });
+
     proxy.on('error', (e) => {
-      logger.log('error', '/api/contacts/generate', 'API_ERROR', e.message, null);
+      if (res.headersSent) return;
+      logger.log('error', '/api/contacts/generate', requestTimedOut ? 'TIMEOUT' : 'API_ERROR', e.message, null);
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+      res.end(JSON.stringify({
+        error: requestTimedOut ? 'The AI service took too long to respond. Please try again.' : 'The AI service is temporarily unavailable. Please try again in a moment.',
+        code: requestTimedOut ? 'TIMEOUT' : 'API_ERROR'
+      }));
     });
 
     proxy.write(payload);
@@ -768,6 +814,7 @@ const server = http.createServer((req, res) => {
   const debriefMatch = parsed.pathname.match(/^\/api\/accounts\/([a-z0-9-]+)\/debrief$/);
 
   if (req.method === 'POST' && debriefMatch) {
+    if (!checkRateLimit(req, res)) return;
     readBody(req, res, (body) => {
       let parsed_body;
       try {
@@ -838,6 +885,7 @@ const server = http.createServer((req, res) => {
         port: 443,
         path: '/v1/messages',
         method: 'POST',
+        timeout: AI_TIMEOUT_MS,
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': API_KEY,
@@ -846,15 +894,17 @@ const server = http.createServer((req, res) => {
         }
       };
 
+      var requestTimedOut = false;
       var proxy = https.request(options, function(apiRes) {
         var data = '';
         apiRes.on('data', function(chunk) { data += chunk; });
         apiRes.on('end', function() {
+          if (res.headersSent) return;
           try {
             var parsed_resp = JSON.parse(data);
             if (apiRes.statusCode !== 200) {
-              res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
-              res.end(data);
+              res.writeHead(502, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'UPSTREAM_ERROR' }));
               return;
             }
             var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
@@ -888,16 +938,26 @@ const server = http.createServer((req, res) => {
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify(proposals));
           } catch (e) {
+            logger.log('error', '/api/debrief', 'PARSE_ERROR', e.message, debriefMatch[1]);
             res.writeHead(502, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+            res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'API_ERROR' }));
           }
         });
       });
 
+      proxy.on('timeout', function() {
+        requestTimedOut = true;
+        proxy.destroy(new Error('Request timed out'));
+      });
+
       proxy.on('error', function(e) {
-        logger.log('error', '/api/debrief', 'API_ERROR', e.message, debriefMatch[1]);
+        if (res.headersSent) return;
+        logger.log('error', '/api/debrief', requestTimedOut ? 'TIMEOUT' : 'API_ERROR', e.message, debriefMatch[1]);
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+        res.end(JSON.stringify({
+          error: requestTimedOut ? 'The AI service took too long to respond. Please try again.' : 'The AI service is temporarily unavailable. Please try again in a moment.',
+          code: requestTimedOut ? 'TIMEOUT' : 'API_ERROR'
+        }));
       });
 
       proxy.write(payload);
@@ -976,6 +1036,7 @@ const server = http.createServer((req, res) => {
 
   // POST /api/accounts/:id/strategy - AI strategy synthesis
   if (req.method === 'POST' && strategyMatch) {
+    if (!checkRateLimit(req, res)) return;
     var account = db.getAccount(strategyMatch[1]);
     if (!account) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -1051,6 +1112,7 @@ const server = http.createServer((req, res) => {
       port: 443,
       path: '/v1/messages',
       method: 'POST',
+      timeout: AI_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY,
@@ -1059,15 +1121,17 @@ const server = http.createServer((req, res) => {
       }
     };
 
+    var requestTimedOut = false;
     var proxy = https.request(options, function(apiRes) {
       var data = '';
       apiRes.on('data', function(chunk) { data += chunk; });
       apiRes.on('end', function() {
+        if (res.headersSent) return;
         try {
           var parsed_resp = JSON.parse(data);
           if (apiRes.statusCode !== 200) {
-            res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
-            res.end(data);
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'UPSTREAM_ERROR' }));
             return;
           }
           var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
@@ -1080,16 +1144,26 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(row));
         } catch (e) {
+          logger.log('error', '/api/strategy', 'PARSE_ERROR', e.message, strategyMatch[1]);
           res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+          res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'API_ERROR' }));
         }
       });
     });
 
+    proxy.on('timeout', function() {
+      requestTimedOut = true;
+      proxy.destroy(new Error('Request timed out'));
+    });
+
     proxy.on('error', function(e) {
-      logger.log('error', '/api/strategy', 'API_ERROR', e.message, strategyMatch[1]);
+      if (res.headersSent) return;
+      logger.log('error', '/api/strategy', requestTimedOut ? 'TIMEOUT' : 'API_ERROR', e.message, strategyMatch[1]);
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+      res.end(JSON.stringify({
+        error: requestTimedOut ? 'The AI service took too long to respond. Please try again.' : 'The AI service is temporarily unavailable. Please try again in a moment.',
+        code: requestTimedOut ? 'TIMEOUT' : 'API_ERROR'
+      }));
     });
 
     proxy.write(payload);
@@ -1155,6 +1229,7 @@ const server = http.createServer((req, res) => {
 
   // POST /api/accounts/:id/briefing - generate AI briefing
   if (req.method === 'POST' && briefingMatch) {
+    if (!checkRateLimit(req, res)) return;
     var account = db.getAccount(briefingMatch[1]);
     if (!account) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -1240,6 +1315,7 @@ const server = http.createServer((req, res) => {
       port: 443,
       path: '/v1/messages',
       method: 'POST',
+      timeout: AI_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY,
@@ -1248,15 +1324,17 @@ const server = http.createServer((req, res) => {
       }
     };
 
+    var requestTimedOut = false;
     var proxy = https.request(options, function(apiRes) {
       var data = '';
       apiRes.on('data', function(chunk) { data += chunk; });
       apiRes.on('end', function() {
+        if (res.headersSent) return;
         try {
           var parsed_resp = JSON.parse(data);
           if (apiRes.statusCode !== 200) {
-            res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
-            res.end(data);
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'UPSTREAM_ERROR' }));
             return;
           }
           var text = parsed_resp.content && parsed_resp.content[0] && parsed_resp.content[0].text || '';
@@ -1275,16 +1353,26 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify(row));
         } catch (e) {
+          logger.log('error', '/api/briefing', 'PARSE_ERROR', e.message, briefingMatch[1]);
           res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Failed to parse AI response', detail: e.message }));
+          res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'API_ERROR' }));
         }
       });
     });
 
+    proxy.on('timeout', function() {
+      requestTimedOut = true;
+      proxy.destroy(new Error('Request timed out'));
+    });
+
     proxy.on('error', function(e) {
-      logger.log('error', '/api/briefing', 'API_ERROR', e.message, briefingMatch[1]);
+      if (res.headersSent) return;
+      logger.log('error', '/api/briefing', requestTimedOut ? 'TIMEOUT' : 'API_ERROR', e.message, briefingMatch[1]);
       res.writeHead(502, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+      res.end(JSON.stringify({
+        error: requestTimedOut ? 'The AI service took too long to respond. Please try again.' : 'The AI service is temporarily unavailable. Please try again in a moment.',
+        code: requestTimedOut ? 'TIMEOUT' : 'API_ERROR'
+      }));
     });
 
     proxy.write(payload);
@@ -1351,6 +1439,7 @@ const server = http.createServer((req, res) => {
 
   // Proxy endpoint: POST /api/claude
   if (req.method === 'POST' && parsed.pathname === '/api/claude') {
+    if (!checkRateLimit(req, res)) return;
     readBody(req, res, (body) => {
       let parsed_body;
       try {
@@ -1378,6 +1467,7 @@ const server = http.createServer((req, res) => {
         port: 443,
         path: '/v1/messages',
         method: 'POST',
+        timeout: AI_TIMEOUT_MS,
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': API_KEY,
@@ -1386,19 +1476,35 @@ const server = http.createServer((req, res) => {
         }
       };
 
+      var requestTimedOut = false;
       const proxy = https.request(options, (apiRes) => {
         let data = '';
         apiRes.on('data', chunk => { data += chunk; });
         apiRes.on('end', () => {
+          if (res.headersSent) return;
+          if (apiRes.statusCode !== 200) {
+            res.writeHead(502, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'The AI service returned an error. Please try again.', code: 'UPSTREAM_ERROR' }));
+            return;
+          }
           res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
           res.end(data);
         });
       });
 
+      proxy.on('timeout', function() {
+        requestTimedOut = true;
+        proxy.destroy(new Error('Request timed out'));
+      });
+
       proxy.on('error', (e) => {
-        logger.log('error', '/api/claude', 'API_ERROR', e.message, null);
+        if (res.headersSent) return;
+        logger.log('error', '/api/claude', requestTimedOut ? 'TIMEOUT' : 'API_ERROR', e.message, null);
         res.writeHead(502, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
+        res.end(JSON.stringify({
+          error: requestTimedOut ? 'The AI service took too long to respond. Please try again.' : 'The AI service is temporarily unavailable. Please try again in a moment.',
+          code: requestTimedOut ? 'TIMEOUT' : 'API_ERROR'
+        }));
       });
 
       proxy.write(payload);
