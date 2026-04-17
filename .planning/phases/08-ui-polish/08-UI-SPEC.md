@@ -63,7 +63,7 @@ Mono role (metadata only):
 
 | Role | Size | Weight | Font | Usage |
 |------|------|--------|------|-------|
-| Mono label | 10–11px | 400 | DM Mono | Tags (`.tag`), metadata (`.sig-meta`, `.exec-loc`), account count, revenue in sidebar |
+| Mono label | 11px | 400 | DM Mono | Tags (`.tag`), metadata (`.sig-meta`, `.exec-loc`), account count, revenue in sidebar |
 
 Consistency rule: Any text that is currently rendered at 12px (`.bar-row`, `.topnav-count`) must be audited and either normalized to 11px (label role) or 13px (body role). No new sizes are introduced.
 
@@ -162,7 +162,7 @@ No changes. Already consistent across panels.
   - `border: none`
   - `border-bottom: 1px solid var(--accent)`
   - `color: var(--text)`
-  - `font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em`
+  - `font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em`
   - `font-family: var(--font)`
   - `outline: none`
   - `width: 100%`
@@ -177,7 +177,7 @@ No changes. Already consistent across panels.
 Used for category rename error feedback. No confirmation required for success — sidebar re-render is sufficient confirmation.
 
 - Position: bottom-right, `position: fixed; bottom: 24px; right: 24px; z-index: 2000`
-- Appearance: `background: var(--card); border: 1px solid var(--border2); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--text)`
+- Appearance: `background: var(--card); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 16px; font-size: 13px; color: var(--text)`
 - Error variant: left border `3px solid var(--red)`
 - Success variant: left border `3px solid var(--green)` (available for future use)
 - Animation: fade-in 150ms, auto-dismiss after 3000ms with fade-out 150ms
