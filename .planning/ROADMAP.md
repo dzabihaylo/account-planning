@@ -26,7 +26,11 @@
   2. When the Anthropic API times out or returns an error, the user sees a readable error message in the UI instead of a silent failure or raw stack trace
   3. Rapidly submitting AI requests (chat, refresh, briefing generation) results in a rate-limit response after the threshold is exceeded — token runaway is prevented
   4. After triggering a server error, an administrator can find a timestamped log entry for that error in a persistent location (not just ephemeral stdout)
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Persistent logger module + SQLite backup scheduler
+- [ ] 07-02-PLAN.md — Rate limiting + AI error handling + frontend error display
 
 ### Phase 8: UI Polish
 **Goal**: The UI looks and feels consistent across every tab, and users can reorganize accounts into categories without touching code
@@ -45,7 +49,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. Server Hardening | 0/? | Not started | - |
+| 7. Server Hardening | 0/2 | Planning complete | - |
 | 8. UI Polish | 0/? | Not started | - |
 
 ---
@@ -66,7 +70,7 @@
 
 ## v1 Phase Archive
 
-Phases 1–6 were delivered in milestone v1. See git history for v1 ROADMAP.md.
+Phases 1-6 were delivered in milestone v1. See git history for v1 ROADMAP.md.
 
 | Phase | Name | Status |
 |-------|------|--------|
@@ -93,4 +97,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-04-17*
-*Last updated: 2026-04-17 — v2.0 roadmap initialized*
+*Last updated: 2026-04-17 — Phase 7 plans created*
