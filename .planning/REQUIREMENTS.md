@@ -63,19 +63,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HARD-01 | TBD | Pending |
-| HARD-02 | TBD | Pending |
-| HARD-03 | TBD | Pending |
-| HARD-04 | TBD | Pending |
-| UIPOL-01 | TBD | Pending |
-| UIPOL-02 | TBD | Pending |
-| UIPOL-03 | TBD | Pending |
+| HARD-01 | Phase 7 | Pending |
+| HARD-02 | Phase 7 | Pending |
+| HARD-03 | Phase 7 | Pending |
+| HARD-04 | Phase 7 | Pending |
+| UIPOL-01 | Phase 8 | Pending |
+| UIPOL-02 | Phase 8 | Pending |
+| UIPOL-03 | Phase 8 | Pending |
 
 **Coverage:**
 - v2 requirements: 7 total
-- Mapped to phases: 0
-- Unmapped: 7 (pending roadmap)
+- Mapped to phases: 7
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-17 — v2.0 requirements defined*
+*Last updated: 2026-04-17 — traceability updated after v2.0 roadmap creation*

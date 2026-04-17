@@ -5,9 +5,9 @@ milestone_name: Production Hardening & UI Polish
 current_phase: Not started
 current_plan: Not started
 status: planning
-last_updated: "2026-04-15T12:00:00.000Z"
+last_updated: "2026-04-17T00:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -16,8 +16,8 @@ progress:
 
 # Project State: Grid Dynamics Prospect Intelligence Hub
 
-**Last updated:** 2026-04-10
-**Session:** Roadmap initialization
+**Last updated:** 2026-04-17
+**Session:** v2.0 roadmap creation
 
 ---
 
@@ -26,8 +26,8 @@ progress:
 **Core value:** Every pursuit team member can open this tool and get a current, actionable briefing on any account — who to target, what to pitch, how to reach them, and what we've learned so far.
 
 **Current milestone:** v2.0 — Production Hardening & UI Polish
-**Total phases:** TBD (defining requirements)
-**Status:** Defining requirements
+**Total phases:** 2 (Phases 7–8)
+**Status:** Roadmap complete — ready to plan Phase 7
 
 ---
 
@@ -35,18 +35,14 @@ progress:
 
 **Current phase:** Not started
 **Current plan:** —
-**Status:** Defining requirements
-**Last activity:** 2026-04-15 — Milestone v2.0 started
+**Status:** Roadmap created
+**Last activity:** 2026-04-17 — v2.0 roadmap initialized
 
 ```
 Progress: [                              ] 0%
 
-Phase 1: Persistence & Account Management  [ ] Not started
-Phase 2: Contact Intelligence              [ ] Not started
-Phase 3: Pursuit Tracking                  [ ] Not started
-Phase 4: Pursuit Strategy                  [ ] Not started
-Phase 5: Intelligence Refresh              [ ] Not started
-Phase 6: Briefing & Output                 [ ] Not started
+Phase 7: Server Hardening   [ ] Not started
+Phase 8: UI Polish          [ ] Not started
 ```
 
 ---
@@ -55,31 +51,27 @@ Phase 6: Briefing & Output                 [ ] Not started
 
 | Metric | Value |
 |--------|-------|
-| Phases complete | 0/6 |
-| Requirements mapped | 26/26 |
-| Requirements complete | 0/26 |
+| Phases complete | 0/2 |
+| Requirements mapped | 7/7 |
+| Requirements complete | 0/7 |
 | Plans created | 0 |
 | Plans complete | 0 |
 
 ---
-| Phase 05 P01 | 1m | 2 tasks | 1 files |
-| Phase 05 P02 | 5m | 2 tasks | 1 files |
-| Phase 05 P03 | 3m | 2 tasks | 1 files |
 
 ## Accumulated Context
 
 ### Key Decisions Locked
 
-- **SQLite + Railway Volume** is the persistence approach. No alternative DB considered — keeps the zero-npm-dependency spirit as much as possible while delivering real persistence.
-- **Accounts migrate in Phase 1.** All 13 hardcoded accounts move to DB as part of the foundation phase. Nothing else can build until this is done.
-- **Contact intelligence before pursuit tracking.** CONT delivers the "getting meetings" bottleneck fix earlier; PURS depends on contacts existing anyway.
-- **AI debrief has a human review gate (PURS-03).** AI proposes, user confirms. Prevents bad AI writes to the DB.
-- **Auto-refresh (Phase 5) comes after the pursuit loop is proven (Phases 2-4).** Prevents over-engineering before the interactive workflow is validated.
-- **Briefing (Phase 6) is last.** It synthesizes everything — contacts, logs, strategy. Has no value until those layers exist.
+- **v1 phases 1–6 are complete.** v2 continues phase numbering at 7 to maintain a single sequential history.
+- **Two phases for seven requirements.** HARD-01–04 cluster naturally as server infrastructure; UIPOL-01–03 cluster as UI/frontend work. No artificial splitting needed.
+- **UIPOL-02 and UIPOL-03 (account recategorization + category rename) live in Phase 8.** Both require a categories data model and UI controls — delivering them together avoids a partial implementation.
+- **Phase 8 depends on all six v1 tab phases being complete** — the visual consistency pass (UIPOL-01) can only be complete when all tabs exist.
+- **SQLite backup (HARD-01) builds on the Railway Volume + SQLite foundation from Phase 1.**
 
 ### Active Todos
 
-- [ ] Run `/gsd-plan-phase 1` to create the Phase 1 execution plan
+- [ ] Run `/gsd-plan-phase 7` to create the Phase 7 execution plan
 
 ### Blockers
 
@@ -93,11 +85,11 @@ None
 
 ### Context Notes
 
-- Existing codebase: single `index.html` (~1,226 lines) + plain `server.js`, zero npm dependencies, Railway-hosted
-- All 13 accounts currently hardcoded as JS objects in `index.html` — Phase 1 replaces this
-- Dave is the primary daily user; pursuit team members consume briefings he shares
-- The biggest bottleneck is getting meetings — Phase 2 (Contact Intelligence) directly addresses this
-- Token costs matter — Phase 5 (Intelligence Refresh) includes a budget gate for this reason
+- v1 delivered 26 requirements across 6 phases — all planning artifacts in git history
+- Phase 5 (Intelligence Refresh) is the only v1 phase marked complete in the progress table; others were planned but execution state is tracked in git
+- UIPOL-02 and UIPOL-03 require a `categories` table (or equivalent column) on the accounts DB — Phase 7 should not introduce schema changes that conflict with this
+- Rate limiting (HARD-03) applies to all AI endpoints: /api/claude (chat), refresh, briefing generation
+- Persistent error logging (HARD-04) must survive Railway restarts — file-based logging to Railway Volume or a structured log store
 
 ---
 
@@ -108,11 +100,13 @@ None
 1. Read this file for current position
 2. Read `.planning/ROADMAP.md` for phase structure
 3. Read `.planning/REQUIREMENTS.md` for requirement details
-4. Run `/gsd-plan-phase {N}` for the current phase
+4. Run `/gsd-plan-phase 7` to start Phase 7
 
 ### Last Session Summary
 
-**2026-04-10:** Project initialized. Requirements defined (26 v1 across 6 categories). Research skipped (no SUMMARY.md generated). Roadmap created with 6 phases derived from natural dependency boundaries. 100% requirement coverage achieved.
+**2026-04-17:** v2.0 milestone started. 7 requirements defined (HARD-01–04, UIPOL-01–03). Roadmap created with 2 phases (7: Server Hardening, 8: UI Polish). 100% requirement coverage achieved.
 
 ---
+
 *State initialized: 2026-04-10*
+*Updated: 2026-04-17 — v2.0 roadmap created*
