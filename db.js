@@ -668,6 +668,7 @@ function saveBriefing(accountId, content, tokensUsed) {
 }
 
 module.exports = {
+  dbPath,
   db,
   getAccounts,
   getAccount,

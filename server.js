@@ -4,6 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const url = require('url');
 const db = require('./db');
+const logger = require('./logger');
+const { startBackupScheduler } = require('./backup');
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 const APP_PASSWORD = process.env.APP_PASSWORD;
@@ -182,7 +184,7 @@ function refreshAccount(accountId, refreshType) {
             tokens_used: totalTokens
           });
         } catch (e) {
-          console.error('  Refresh parse error for ' + account.name + ':', e.message);
+          logger.log('error', '/api/refresh', 'REFRESH_PARSE_ERROR', 'Refresh parse error for ' + account.name + ': ' + e.message, accountId);
           // Still update last_refreshed_at to prevent retry loops
           db.updateAccountFromRefresh(accountId, { last_refreshed_at: new Date().toISOString() });
           resolve({
@@ -195,7 +197,7 @@ function refreshAccount(accountId, refreshType) {
     });
 
     proxy.on('error', function(e) {
-      console.error('  Refresh API error for ' + (account ? account.name : accountId) + ':', e.message);
+      logger.log('error', '/api/refresh', 'API_ERROR', 'Refresh API error for ' + (account ? account.name : accountId) + ': ' + e.message, accountId);
       reject(e);
     });
 
@@ -220,7 +222,7 @@ async function runAutoRefresh() {
     try {
       await refreshAccount(accounts[i].id, 'auto');
     } catch (e) {
-      console.error('  Auto-refresh error for ' + accounts[i].name + ':', e.message);
+      logger.log('error', '/api/refresh', 'AUTO_REFRESH_ACCOUNT_ERROR', 'Auto-refresh error for ' + accounts[i].name + ': ' + e.message, accounts[i].id);
       // Continue to next account on error
     }
   }
@@ -235,7 +237,7 @@ function startRefreshScheduler() {
   console.log('Refresh scheduler started: interval = ' + (REFRESH_INTERVAL_MS / 3600000) + ' hours');
   setInterval(function() {
     runAutoRefresh().catch(function(e) {
-      console.error('Auto-refresh failed:', e.message);
+      logger.log('error', '/api/refresh', 'AUTO_REFRESH_FAILED', e.message, null);
     });
   }, REFRESH_INTERVAL_MS);
 }
@@ -431,7 +433,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     }).catch(function(e) {
-      console.error('Manual refresh error:', e.message);
+      logger.log('error', '/api/refresh', 'MANUAL_REFRESH_ERROR', e.message, refreshAccountId);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Refresh failed: ' + e.message }));
     });
@@ -530,7 +532,7 @@ const server = http.createServer((req, res) => {
     });
 
     proxy.on('error', (e) => {
-      console.error('Anthropic API error:', e.message);
+      logger.log('error', '/api/contacts/generate', 'API_ERROR', e.message, null);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
     });
@@ -893,7 +895,7 @@ const server = http.createServer((req, res) => {
       });
 
       proxy.on('error', function(e) {
-        console.error('Anthropic API error:', e.message);
+        logger.log('error', '/api/debrief', 'API_ERROR', e.message, debriefMatch[1]);
         res.writeHead(502, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
       });
@@ -1085,7 +1087,7 @@ const server = http.createServer((req, res) => {
     });
 
     proxy.on('error', function(e) {
-      console.error('Anthropic API error:', e.message);
+      logger.log('error', '/api/strategy', 'API_ERROR', e.message, strategyMatch[1]);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
     });
@@ -1280,7 +1282,7 @@ const server = http.createServer((req, res) => {
     });
 
     proxy.on('error', function(e) {
-      console.error('Anthropic API error:', e.message);
+      logger.log('error', '/api/briefing', 'API_ERROR', e.message, briefingMatch[1]);
       res.writeHead(502, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
     });
@@ -1394,7 +1396,7 @@ const server = http.createServer((req, res) => {
       });
 
       proxy.on('error', (e) => {
-        console.error('Anthropic API error:', e.message);
+        logger.log('error', '/api/claude', 'API_ERROR', e.message, null);
         res.writeHead(502, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Upstream API error', detail: e.message }));
       });
@@ -1431,4 +1433,5 @@ server.listen(PORT, () => {
   console.log('  Password protection: enabled');
   console.log('');
   startRefreshScheduler();
+  startBackupScheduler(db.dbPath);
 });
