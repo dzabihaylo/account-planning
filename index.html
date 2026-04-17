@@ -958,8 +958,11 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
       </div>
       <div id="modalDetailFields">
         <div class="form-group">
-          <label class="form-label">Sector</label>
-          <input class="form-input" id="modalSector" placeholder="e.g. Automotive OEM" />
+          <label class="form-label">Industry Category</label>
+          <select class="form-input" id="modalSector">
+            <option value="">Select a category</option>
+          </select>
+          <input class="form-input" id="modalSectorNew" placeholder="Type new category name" style="display:none;margin-top:4px" />
         </div>
         <div class="form-group">
           <label class="form-label">Annual revenue (e.g. $12.6B)</label>
@@ -1518,7 +1521,7 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = 'Add Account';
   document.getElementById('modalAccountId').value = '';
   document.getElementById('modalName').value = '';
-  document.getElementById('modalSector').value = '';
+  populateCategoryDropdown('');
   document.getElementById('modalRevenue').value = '';
   document.getElementById('modalEmployees').value = '';
   document.getElementById('modalHQ').value = '';
@@ -1576,6 +1579,47 @@ async function addAndResearch() {
   }
 }
 
+// ---- Category Dropdown ----
+async function populateCategoryDropdown(currentSector) {
+  var select = document.getElementById('modalSector');
+  var sectors = [];
+  try {
+    var resp = await fetch('/api/categories');
+    sectors = await resp.json();
+  } catch (e) { /* fall back to empty list */ }
+
+  var options = '<option value="">Select a category</option>';
+  for (var i = 0; i < sectors.length; i++) {
+    var s = sectors[i];
+    options += '<option value="' + escapeHtml(s) + '"' + (s === currentSector ? ' selected' : '') + '>' + escapeHtml(s) + '</option>';
+  }
+  options += '<option value="__new__">New category...</option>';
+  select.innerHTML = options;
+
+  // If currentSector exists but is not in the list, add it
+  if (currentSector && sectors.indexOf(currentSector) === -1) {
+    var opt = document.createElement('option');
+    opt.value = currentSector;
+    opt.textContent = currentSector;
+    opt.selected = true;
+    select.insertBefore(opt, select.lastElementChild);
+  }
+
+  // Wire the "New category..." toggle
+  var newInput = document.getElementById('modalSectorNew');
+  newInput.style.display = 'none';
+  newInput.value = '';
+  select.onchange = function() {
+    if (select.value === '__new__') {
+      newInput.style.display = '';
+      newInput.focus();
+    } else {
+      newInput.style.display = 'none';
+      newInput.value = '';
+    }
+  };
+}
+
 // ---- Modal: Edit Account ----
 function openEditModal(id) {
   var acct = accounts.find(function(a) { return a.id === id; });
@@ -1589,7 +1633,7 @@ function openEditModal(id) {
   document.getElementById('modalResearchStatus').style.display = 'none';
   document.getElementById('modalAccountId').value = id;
   document.getElementById('modalName').value = acct.name || '';
-  document.getElementById('modalSector').value = acct.sector || '';
+  populateCategoryDropdown(acct.sector || '');
   document.getElementById('modalRevenue').value = acct.revenue || '';
   document.getElementById('modalEmployees').value = acct.employees || '';
   document.getElementById('modalHQ').value = acct.hq || '';
@@ -1631,9 +1675,20 @@ async function saveAccount() {
   btn.disabled = true;
   hideModalError();
 
+  var sectorValue = document.getElementById('modalSector').value.trim();
+  if (sectorValue === '__new__') {
+    sectorValue = document.getElementById('modalSectorNew').value.trim();
+    if (!sectorValue) {
+      showModalError('Please enter a name for the new category.');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      return;
+    }
+  }
+
   var payload = {
     name: name,
-    sector: document.getElementById('modalSector').value.trim(),
+    sector: sectorValue,
     revenue: document.getElementById('modalRevenue').value.trim(),
     employees: document.getElementById('modalEmployees').value.trim(),
     hq: document.getElementById('modalHQ').value.trim(),
