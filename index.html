@@ -919,6 +919,14 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
   /* Page settings */
   @page { margin: 20mm; size: A4 portrait; }
 }
+
+/* SIDEBAR INLINE RENAME */
+.sidebar-rename-input { background: transparent; border: none; border-bottom: 1px solid var(--accent); color: var(--text); font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--mono); outline: none; width: 100%; padding: 0; }
+
+/* GENERIC TOAST NOTIFICATION */
+.gd-toast { position: fixed; bottom: 24px; right: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 10000; animation: toastIn 0.3s ease; transition: opacity 0.15s; }
+.gd-toast-error { border-left: 3px solid var(--red); }
+.gd-toast-success { border-left: 3px solid var(--green); }
 </style>
 </head>
 <body>
@@ -1150,6 +1158,97 @@ function renderSidebar() {
   html += '</div>';
   html += '<button class="sidebar-add" onclick="openAddModal()">+ Add Account</button>';
   sidebar.innerHTML = html;
+
+  // Attach dblclick rename handlers to sector name spans
+  var sectorLabels = sidebar.querySelectorAll('.sidebar-section > span:first-child');
+  sectorLabels.forEach(function(span) {
+    span.style.cursor = 'default';
+    span.title = 'Double-click to rename category';
+    span.addEventListener('dblclick', function(e) {
+      e.stopPropagation(); // Don't trigger toggleSection
+      startCategoryRename(span);
+    });
+  });
+}
+
+// ---- Toast Notification ----
+function showToast(message, variant) {
+  var existing = document.querySelector('.gd-toast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.className = 'gd-toast gd-toast-' + (variant || 'error');
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    setTimeout(function() { if (toast.parentNode) toast.remove(); }, 150);
+  }, 3000);
+}
+
+// ---- Inline Category Rename ----
+function startCategoryRename(span) {
+  var oldName = span.textContent;
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.value = oldName;
+  input.className = 'sidebar-rename-input';
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  var committed = false;
+  function commit() {
+    if (committed) return;
+    committed = true;
+    var newName = input.value.trim();
+    if (!newName || newName === oldName) {
+      // No change or empty — cancel
+      input.replaceWith(span);
+      return;
+    }
+    confirmCategoryRename(oldName, newName);
+  }
+  function cancelRename() {
+    if (committed) return;
+    committed = true;
+    input.replaceWith(span);
+  }
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { cancelRename(); }
+  });
+  input.addEventListener('blur', commit);
+}
+
+async function confirmCategoryRename(oldName, newName) {
+  // Update sectionState before re-render so collapse state follows the renamed category
+  if (sectionState.hasOwnProperty(oldName)) {
+    sectionState[newName] = sectionState[oldName];
+    delete sectionState[oldName];
+  }
+
+  try {
+    var resp = await fetch('/api/categories/rename', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ oldName: oldName, newName: newName })
+    });
+    if (!resp.ok) throw new Error('rename failed');
+
+    // Clear rendered panels so they re-render with updated sector name
+    document.getElementById('mainContent').innerHTML = '';
+    await loadAccounts();
+    if (currentAccount) showAccount(currentAccount);
+  } catch (e) {
+    // Revert sectionState on failure
+    if (sectionState.hasOwnProperty(newName)) {
+      sectionState[oldName] = sectionState[newName];
+      delete sectionState[newName];
+    }
+    showToast('Rename failed. Please try again.', 'error');
+    await loadAccounts();
+  }
 }
 
 // ---- Toggle Section ----
