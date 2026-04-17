@@ -16,6 +16,16 @@ const AI_TIMEOUT_MS = parseInt(process.env.AI_TIMEOUT_MS) || 55000;
 const rateLimitMap = new Map();
 const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_PER_MINUTE) || 10;
 
+// Prune stale rate limit entries once per minute to prevent unbounded map growth
+setInterval(function() {
+  var cutoff = Date.now() - 120000;
+  for (var [key, timestamps] of rateLimitMap) {
+    if (!timestamps.some(function(t) { return t > cutoff; })) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000);
+
 const GD_CONTEXT = 'You are an account intelligence assistant for Grid Dynamics sales team. Grid Dynamics is a publicly traded enterprise AI and digital transformation consultancy. Key facts about Grid Dynamics: Founded 2006, HQ in Roseville CA, offices including Detroit MI. Dave Zabihaylo is Senior Director GTM Automotive based in Detroit, owns the Ford account, and is building the automotive go-to-market. Grid Dynamics has deep Google Cloud, AWS, Snowflake, and AI engineering expertise. Differentiation vs large Indian SIs (HCL, Cognizant, Infosys, Wipro): AI-native delivery, senior engineering talent, consultancy approach not body-shop, Google Cloud partnership. Answer concisely and with specific actionable sales intelligence. Do not use em dashes or double hyphens. Use bullet points only when listing multiple items.';
 
 if (!API_KEY) {
