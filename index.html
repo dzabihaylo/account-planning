@@ -580,7 +580,7 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
 .contact-proposal-card .proposal-card-hdr { color: #A78BFA; }
 .contact-proposal-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-family: var(--mono); font-weight: 500; background: rgba(124,58,237,0.15); color: #7C3AED; text-transform: capitalize; }
 .review-progress { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 6px; }
-.activity-timeline { display: flex; flex-direction: column; gap: 12px; }
+.activity-timeline { display: flex; flex-direction: column; gap: 8px; }
 .activity-entry { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; border-left: 3px solid var(--muted); }
 .activity-entry[data-type="meeting"] { border-left-color: #3B82F6; }
 .activity-entry[data-type="call"] { border-left-color: #22C55E; }
@@ -1017,7 +1017,7 @@ body { font-family: var(--font); background: var(--dark); color: var(--text); mi
       </div>
       <div id="modalResearchStatus" style="display:none;padding:12px;background:var(--surface);border-radius:8px;margin-top:8px">
         <div style="font-size:13px;color:var(--text)">Researching <strong id="modalResearchName"></strong>...</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">AI is gathering company details, financials, technology stack, and strategic signals.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">AI is gathering company details, financials, technology stack, and strategic signals.</div>
       </div>
       <div class="form-error" id="modalError"></div>
     </div>
@@ -1964,7 +1964,7 @@ function renderContactsGrid(accountId, contacts) {
   groupOrder.forEach(function(influence) {
     if (groups[influence].length === 0) return;
     html += '<div class="contact-group">';
-    html += '<div class="contact-group-hdr">' + groupLabels[influence] + '</div>';
+    html += '<div class="contact-group-hdr section-header">' + groupLabels[influence] + '</div>';
     html += '<div class="contact-grid">';
     groups[influence].forEach(function(contact) {
       html += renderContactCard(contact);
