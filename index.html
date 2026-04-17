@@ -1418,6 +1418,14 @@ async function sendMsg(id) {
         account_id: id
       })
     });
+    if (!res.ok) {
+      var errData = {};
+      try { errData = await res.json(); } catch(e) {}
+      var errMsg = errData.error || 'Something went wrong. Please try again.';
+      removeTyping(id, typingId);
+      addMsg(id, 'ai', errMsg);
+      return;
+    }
     var data = await res.json();
     removeTyping(id, typingId);
     var reply = data.content && data.content[0] ? data.content[0].text : 'Unable to get a response. Please try again.';
@@ -1769,7 +1777,9 @@ async function manualRefresh(accountId) {
     var data = await resp.json();
 
     if (!resp.ok) {
-      throw new Error(data.error || 'Refresh failed');
+      var errMsg = data.error || 'Something went wrong. Please try again.';
+      showRefreshToast('Refresh Error', errMsg);
+      return;
     }
 
     // Update badge (D-18)
@@ -2225,7 +2235,20 @@ function generateAI(contactId, accountId) {
     body: JSON.stringify({})
   })
     .then(function(r) {
-      if (!r.ok) throw new Error('Generate failed');
+      if (!r.ok) {
+        return r.json().catch(function() { return {}; }).then(function(errData) {
+          var errMsg = errData.error || 'Something went wrong. Please try again.';
+          if (rationaleBody) {
+            rationaleBody.innerHTML = '<p style="color:var(--red);font-size:11px;margin-bottom:8px">' + escapeHtml(errMsg) + '</p>' +
+              '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Generate Rationale</button>';
+          }
+          if (warmpathBody) {
+            warmpathBody.innerHTML = '<p style="color:var(--red);font-size:11px;margin-bottom:8px">' + escapeHtml(errMsg) + '</p>' +
+              '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Find Warm Path</button>';
+          }
+          throw new Error('handled');
+        });
+      }
       return r.json();
     })
     .then(function(contact) {
@@ -2265,7 +2288,8 @@ function generateAI(contactId, accountId) {
         }
       }
     })
-    .catch(function() {
+    .catch(function(err) {
+      if (err && err.message === 'handled') return;
       if (rationaleBody) {
         rationaleBody.innerHTML = '<p style="color:var(--red);font-size:11px;margin-bottom:8px">Couldn\'t generate. Try again in a moment.</p>' +
           '<button class="contact-generate-btn" onclick="event.stopPropagation();generateAI(' + contactId + ',\'' + escapeHtml(accountId) + '\')">Generate Rationale</button>';
@@ -2479,7 +2503,16 @@ function generateStrategy(accountId) {
     headers: { 'Content-Type': 'application/json' }
   })
     .then(function(r) {
-      if (!r.ok) throw new Error('Server error');
+      if (!r.ok) {
+        return r.json().catch(function() { return {}; }).then(function(errData) {
+          var errMsg = errData.error || 'Something went wrong. Please try again.';
+          if (cardEl) {
+            delete cardEl.dataset.generating;
+            cardEl.innerHTML = '<div class="strategy-empty">' + escapeHtml(errMsg) + ' <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline" onclick="generateStrategy(\'' + escapeHtml(accountId) + '\')">Try again</button></div>';
+          }
+          throw new Error('handled');
+        });
+      }
       return r.json();
     })
     .then(function(data) {
@@ -2487,7 +2520,8 @@ function generateStrategy(accountId) {
       strategyCache[accountId] = data;
       renderStrategy(accountId, data);
     })
-    .catch(function() {
+    .catch(function(err) {
+      if (err && err.message === 'handled') return;
       if (cardEl) {
         delete cardEl.dataset.generating;
         cardEl.innerHTML = '<div class="strategy-empty">Failed to generate strategy. <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline" onclick="generateStrategy(\'' + escapeHtml(accountId) + '\')">Try again</button></div>';
@@ -2620,13 +2654,22 @@ function generateBriefing(accountId) {
     headers: { 'Content-Type': 'application/json' }
   })
     .then(function(r) {
-      if (!r.ok) throw new Error('Server error');
+      if (!r.ok) {
+        return r.json().catch(function() { return {}; }).then(function(errData) {
+          var errMsg = errData.error || 'Something went wrong. Please try again.';
+          if (cardEl) {
+            cardEl.innerHTML = '<div class="strategy-empty">' + escapeHtml(errMsg) + ' <button style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline" onclick="generateBriefing(\'' + escapeHtml(accountId) + '\')">Try again</button></div>';
+          }
+          throw new Error('handled');
+        });
+      }
       return r.json();
     })
     .then(function(data) {
       renderBriefing(accountId, data);
     })
-    .catch(function() {
+    .catch(function(err) {
+      if (err && err.message === 'handled') return;
       if (cardEl) {
         cardEl.innerHTML = '<div class="strategy-empty">Failed to generate briefing. ' +
           '<button style="background:none;border:none;color:var(--accent);cursor:pointer;font-family:var(--font);font-size:13px;text-decoration:underline" ' +
@@ -3170,7 +3213,13 @@ function extractDebrief(accountId) {
           throw new Error('parse_failure');
         });
       }
-      if (!r.ok) throw new Error('Server error ' + r.status);
+      if (!r.ok) {
+        return r.json().catch(function() { return {}; }).then(function(errData) {
+          var errMsg = errData.error || 'Something went wrong. Please try again.';
+          if (statusEl) { statusEl.className = 'debrief-status error'; statusEl.textContent = errMsg; }
+          throw new Error('handled');
+        });
+      }
       return r.json();
     })
     .then(function(proposals) {
@@ -3179,9 +3228,8 @@ function extractDebrief(accountId) {
       renderProposals(accountId);
     })
     .catch(function(err) {
-      if (err.message !== 'parse_failure') {
-        if (statusEl) { statusEl.className = 'debrief-status error'; statusEl.textContent = 'Something went wrong. Please try again.'; }
-      }
+      if (err.message === 'parse_failure' || err.message === 'handled') return;
+      if (statusEl) { statusEl.className = 'debrief-status error'; statusEl.textContent = 'Something went wrong. Please try again.'; }
     })
     .finally(function() {
       if (btn) { btn.disabled = false; btn.textContent = 'Extract with AI'; }
