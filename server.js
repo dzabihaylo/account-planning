@@ -48,6 +48,12 @@ function checkRateLimit(req, res) {
   return true;
 }
 
+function isSafeUrl(value) {
+  if (!value) return true;
+  var lower = value.trim().toLowerCase();
+  return lower.startsWith('https://') || lower.startsWith('http://') || lower === '';
+}
+
 function getCookies(req) {
   const cookies = {};
   const header = req.headers.cookie || '';
@@ -287,6 +293,12 @@ const server = http.createServer((req, res) => {
 
   // Login form submission
   if (req.method === 'POST' && parsed.pathname === '/login') {
+    const ct = req.headers['content-type'] || '';
+    if (!ct.includes('application/x-www-form-urlencoded')) {
+      res.writeHead(400, { 'Content-Type': 'text/html' });
+      res.end(LOGIN_ERROR_PAGE);
+      return;
+    }
     readBody(req, res, (body) => {
       const params = new URLSearchParams(body);
       const submitted = params.get('password');
@@ -656,6 +668,11 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({ error: 'Invalid JSON' }));
         return;
       }
+      if (parsed_body.linkedin && !isSafeUrl(parsed_body.linkedin)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'linkedin must be a valid http or https URL' }));
+        return;
+      }
       const updated = db.updateContact(parseInt(contactMatch[1]), parsed_body);
       if (!updated) {
         res.writeHead(404, { 'Content-Type': 'application/json' });
@@ -715,6 +732,11 @@ const server = http.createServer((req, res) => {
       if (!influence || !validInfluence.includes(influence)) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'influence must be one of: ' + validInfluence.join(', ') }));
+        return;
+      }
+      if (linkedin && !isSafeUrl(linkedin)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'linkedin must be a valid http or https URL' }));
         return;
       }
       const account = db.getAccount(contactsMatch[1]);
@@ -1450,17 +1472,29 @@ const server = http.createServer((req, res) => {
         return;
       }
 
+      // Validate messages field before forwarding
+      if (!Array.isArray(parsed_body.messages) || parsed_body.messages.length === 0) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'messages must be a non-empty array' }));
+        return;
+      }
+
       // If account_id is provided, build system prompt from DB
+      var systemPrompt = parsed_body.system || GD_CONTEXT;
       if (parsed_body.account_id) {
         const acct = db.getAccount(parsed_body.account_id);
         if (acct) {
-          const sysPrompt = GD_CONTEXT + '\n\nACCOUNT: ' + acct.name + '\nSECTOR: ' + acct.sector + '\nHQ: ' + acct.hq + '\nREVENUE: ' + acct.revenue + '\nEMPLOYEES: ' + acct.employees + '\n\nACCOUNT INTELLIGENCE:\n' + acct.context;
-          parsed_body.system = sysPrompt;
+          systemPrompt = GD_CONTEXT + '\n\nACCOUNT: ' + acct.name + '\nSECTOR: ' + acct.sector + '\nHQ: ' + acct.hq + '\nREVENUE: ' + acct.revenue + '\nEMPLOYEES: ' + acct.employees + '\n\nACCOUNT INTELLIGENCE:\n' + acct.context;
         }
-        delete parsed_body.account_id;
       }
 
-      const payload = JSON.stringify(parsed_body);
+      // Build allowlisted payload — pin model and max_tokens server-side
+      const payload = JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: parsed_body.messages
+      });
 
       const options = {
         hostname: 'api.anthropic.com',
